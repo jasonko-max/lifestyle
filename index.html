@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>個人化生活型態與退休財務決策評估系統</title>
+    <style>
+        :root {
+            --primary-navy: #1F497D;
+            --secondary-blue: #2E6B9E;
+            --accent-gold: #D9A05B;
+            --bg-color: #F4F7FA;
+            --card-bg: #FFFFFF;
+            --text-primary: #2C3E50;
+            --text-secondary: #606F7B;
+            --border-color: #E2E8F0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: "PingFang TC", "Microsoft JhengHei", -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-navy) 0%, var(--secondary-blue) 100%);
+            color: #FFFFFF;
+            padding: 40px 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            font-size: 15px;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+            flex: 1;
+            width: 100%;
+        }
+
+        .portal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            padding: 32px 28px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg, var(--primary-navy), var(--secondary-blue));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        .card:hover::before {
+            opacity: 1;
+        }
+
+        .card-icon {
+            font-size: 42px;
+            margin-bottom: 16px;
+            display: inline-block;
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary-navy);
+            margin-bottom: 12px;
+        }
+
+        .card-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            line-height: 1.6;
+            flex-grow: 1;
+        }
+
+        .card-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        .tag {
+            background-color: #EBF8FF;
+            color: var(--secondary-blue);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .btn {
+            display: inline-block;
+            width: 100%;
+            text-align: center;
+            background: var(--primary-navy);
+            color: #FFFFFF;
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 600;
+            transition: background 0.2s ease, transform 0.1s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: var(--secondary-blue);
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border-color);
+            background: #FFFFFF;
+        }
+
+        @media (max-width: 640px) {
+            header h1 {
+                font-size: 22px;
+            }
+            .container {
+                margin: 20px auto;
+            }
+            .card {
+                padding: 24px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>個人化生活型態與退休財務決策評估系統</h1>
+        <p>提供全生命週期視角評估與動態財務模型試算，協助建立自主平衡與穩健退休規劃</p>
+    </header>
+
+    <main class="container">
+        <div class="portal-grid">
+            
+            <!-- 卡片 1：生活型態軌跡評估系統 -->
+            <div class="card">
+                <div>
+                    <div class="card-icon">🎯</div>
+                    <h2 class="card-title">全生命週期生活型態轉換軌跡評估系統</h2>
+                    <p class="card-description">
+                        涵蓋 20s 到 90s 八大生命階段，透過財務、時間、健康、精神、人際與目標等 6 大維度動態加權，診斷各階段發展平衡度與優化瓶頸。
+                    </p>
+                    <div class="card-tags">
+                        <span class="tag">v4.1 動態權重版</span>
+                        <span class="tag">六維雷達圖</span>
+                        <span class="tag">跨階段對比</span>
+                    </div>
+                </div>
+                <a href="1.lifestyle_生活型態軌跡評估表_v4.1_20260921_2.html" class="btn">進入評估系統 ➔</a>
+            </div>
+
+            <!-- 卡片 2：勞保老年給付試算表 -->
+            <div class="card">
+                <div>
+                    <div class="card-icon">⚖️</div>
+                    <h2 class="card-title">勞保老年給付通用試算表</h2>
+                    <p class="card-description">
+                        提供一次請領與老年年金（月領）比較分析、展延與提前請領影響、30 年投資再投入試算以及月領回本損益兩平點試算。
+                    </p>
+                    <div class="card-tags">
+                        <span class="tag">v1.9 通用版</span>
+                        <span class="tag">一次領 vs 月領</span>
+                        <span class="tag">投資複利試算</span>
+                    </div>
+                </div>
+                <a href="2.勞保老年給付試算表_v1.9_20260921.html" class="btn">進入試算系統 ➔</a>
+            </div>
+
+        </div>
+    </main>
+
+    <footer>
+        <p>© 2026 自主人生規劃與財務決策工具系統 | 保留所有權利</p>
+    </footer>
+
+</body>
+</html>
