@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>個人財務與生命週期評估工具箱 - 導覽首頁</title>
+
+    <!-- 🌐 1. Favicon 網頁圖示設定 -->
+    <link rel="icon" href="favicon.png" type="image/png">
+    <link rel="apple-touch-icon" href="favicon.png">
+
+    <!-- 📲 2. Open Graph (OG) 社群分享卡片預覽設定 (適用 LINE, FB, Discord 等) -->
+    <meta property="og:title" content="生活型態財務規劃">
+    <meta property="og:description" content="整合全生命週期生活型態轉換評估表、勞保老年給付、勞退個人專戶、綜合所得稅預估、個人現金流流水帳與現金流量收支平衡表">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://jasonko-max.github.io/lifestyle/">
+    <meta property="og:image" content="https://jasonko-max.github.io/lifestyle/favicon.png">
+
+    <style>
+        :root {
+            --primary-navy: #1b365d;
+            --primary-blue: #2c5282;
+            --accent-blue: #3182ce;
+            --bg-color: #f7fafc;
+            --card-bg: #ffffff;
+            --text-dark: #2d3748;
+            --text-muted: #718096;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft JhengHei", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: var(--primary-navy);
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 15px;
+            margin: 0;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 28px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.09);
+            border-color: #bee3f8;
+        }
+
+        .card-tag {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 20px;
+            margin-bottom: 14px;
+            width: fit-content;
+        }
+
+        .tag-blue { background: #ebf8ff; color: #2b6cb0; }
+        .tag-amber { background: #fef3c7; color: #92400e; }
+        .tag-navy { background: #e8eef5; color: #1f497d; }
+        .tag-green { background: #dcfce7; color: #166534; }
+        .tag-purple { background: #f3e8ff; color: #6b21a8; }
+        .tag-teal { background: #ccfbf1; color: #0f766e; }
+
+        .card-title {
+            font-size: 19px;
+            font-weight: 700;
+            color: var(--primary-navy);
+            margin: 0 0 12px 0;
+            line-height: 1.4;
+        }
+
+        .card-desc {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 24px;
+            flex-grow: 1;
+        }
+
+        .card-btn {
+            display: block;
+            text-align: center;
+            background: var(--primary-navy);
+            color: #ffffff;
+            text-decoration: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s ease;
+        }
+
+        .card-btn:hover {
+            background: var(--primary-blue);
+        }
+
+        .footer-info {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>生活型態財務規劃</h1>
+        <p>整合全生命週期生活型態轉換評估表、勞保老年給付、勞退個人專戶、綜合所得稅預估、個人現金流流水帳與現金流量收支平衡表</p>
+    </div>
+
+    <div class="grid">
+        <!-- Card 1 -->
+        <div class="card">
+            <div>
+                <span class="card-tag tag-navy">v4.1 全面動態版</span>
+                <h2 class="card-title">全生命週期生活型態轉換軌跡評估系統</h2>
+                <p class="card-desc">包含 20s～90s 共 8 大生命級距評估，結合 dynamic 權重加權、雷達圖對比、短板優化建議與完整報告列印功能。</p>
+            </div>
+            <a href="1.lifestyle_生活型態軌跡評估表_v4.1_20260921.html" class="card-btn">開啟試算系統 ➔</a>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="card">
+            <div>
+                <span class="card-tag tag-blue">v1.9 完整試算版</span>
+                <h2 class="card-title">勞保老年給付通用試算系統</h2>
+                <p class="card-desc">提供「一次請領 vs 老年年金月領」優劣分析、展延與減給比例計算、投資殖利率再投入本息試算與損益兩平分析。</p>
+            </div>
+            <a href="2.勞保老年給付試算表_v1.9_20260921.html" class="card-btn">開啟試算系統 ➔</a>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="card">
+            <div>
+                <span class="card-tag tag-amber">v1.5 專戶紀錄版</span>
+                <h2 class="card-title">勞工退休金個人專戶金額試算與紀錄系統</h2>
+                <p class="card-desc">支援雇主提繳與自願提繳累計、歷年公告收益計算、預估收益誤差調整與當年度損益精準試算。</p>
+            </div>
+            <a href="3.勞工退休金個人專戶金額試算與紀錄表_v1.5_20260921.html" class="card-btn">開啟試算系統 ➔</a>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="card">
+            <div>
+                <span class="card-tag tag-purple">v1.7 長線通膨版</span>
+                <h2 class="card-title">綜合所得稅預估與試算系統</h2>
+                <p class="card-desc">包含獨立稅率級距隔離維護、完整特扣額試算、長線通膨推估，以及夫妻申報 5 軌最佳化比較引擎。</p>
+            </div>
+            <a href="5.綜合所得稅預估與試算系統_v1.7_20260923.html" class="card-btn">開啟試算系統 ➔</a>
+        </div>
+
+        <!-- Card 5 -->
+        <div class="card">
+            <div>
+                <span class="card-tag tag-green">v1.20 極速長遠版</span>
+                <h2 class="card-title">個人現金流流水帳系統</h2>
+                <p class="card-desc">提供長達 60 年全景收支流水帳與淨資產即時試算，支援多類別記帳、彈出視窗明細錄入與跨年度極速連動分析。</p>
+            </div>
+            <a href="4.個人現金流流水帳系統_v1.20_20260923.html" class="card-btn">開啟試算系統 ➔</a>
+        </div>
+
+        <!-- Card 6 -->
+        <div class="card">
+            <div>
+                <span class="card-tag tag-teal">v1.3 壓力測試版</span>
+                <h2 class="card-title">現金流量收支平衡表</h2>
+                <p class="card-desc">提供 25 階配息情境壓力測試、二代健保扣繳試算、多源收入整合及月/季/年收支平衡與兩平點分析。</p>
+            </div>
+            <a href="6.現金流量收支平衡表_1.3_20260923.html" class="card-btn">開啟試算系統 ➔</a>
+        </div>
+    </div>
+
+    <div class="footer-info">
+        最後更新日期：2026 年 09 月 23 日｜Personal Lifestyle Team
+    </div>
+</div>
+
+</body>
+</html>
