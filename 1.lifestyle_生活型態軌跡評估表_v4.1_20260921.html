@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全生命週期生活型態轉換軌跡評估系統 v4.1 (動態權重加權版)</title>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #1F497D;
+            --secondary-color: #2E6B9E;
+            --accent-color: #D9534F;
+            --bg-color: #F4F7FA;
+            --card-bg: #FFFFFF;
+            --text-color: #333333;
+            --border-color: #E0E0E0;
+        }
+
+        body {
+            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 960px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 24px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header-title h1 {
+            margin: 0 0 8px 0;
+            font-size: 24px;
+        }
+
+        .header-title p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.4);
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: white;
+            color: var(--primary-color);
+        }
+
+        .cover-meta-card {
+            grid-column: 1 / -1;
+            background: #FFFFFF;
+            padding: 15px 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .cover-meta-card label {
+            font-size: 13px;
+            font-weight: bold;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cover-meta-card input {
+            padding: 6px 10px;
+            border: 1px solid #CCC;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .age-tabs {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+
+        .age-tab {
+            flex: 1;
+            min-width: 90px;
+            padding: 12px 10px;
+            background: #E8EEF5;
+            color: var(--primary-color);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+
+        .age-tab:hover {
+            background: #D5E1ED;
+        }
+
+        .age-tab.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 440px;
+            width: 100%;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .metric-box {
+            background: #F8FAFC;
+            border-left: 4px solid var(--primary-color);
+            padding: 10px 12px;
+            border-radius: 4px;
+        }
+
+        .metric-title {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .metric-value {
+            font-size: 15px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .dimension-block {
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+
+        .dimension-title {
+            font-weight: bold;
+            color: var(--primary-color);
+            font-size: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .question-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            line-height: 1.4;
+        }
+
+        .question-item input {
+            margin-right: 8px;
+            margin-top: 2px;
+            cursor: pointer;
+        }
+
+        .tag {
+            background: #E8F1F5;
+            color: var(--primary-color);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .unlocked-block {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #F0F7FF;
+            border: 1px dashed #2E6B9E;
+            border-radius: 6px;
+        }
+
+        .timeline-summary {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+            background: #F8FAFC;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .timeline-item {
+            text-align: center;
+            font-size: 12px;
+            padding: 6px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #E2E8F0;
+            cursor: pointer;
+        }
+
+        .timeline-item.active {
+            border-color: var(--primary-color);
+            font-weight: bold;
+            color: var(--primary-color);
+            background: #E8EEF5;
+        }
+
+        .compare-control {
+            margin-top: 15px;
+            padding: 10px;
+            background: #FFF9E6;
+            border-radius: 6px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .compare-control select {
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #CCC;
+        }
+
+        .eval-box {
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            line-height: 1.4;
+            margin-top: 8px;
+        }
+
+        .eval-current {
+            background: #EDF4F9;
+            border-left: 4px solid var(--primary-color);
+            color: #1F497D;
+        }
+
+        .eval-compare {
+            background: #FDF2F2;
+            border-left: 4px solid var(--accent-color);
+            color: #A94442;
+        }
+
+        .action-box {
+            background: #FFFBEB;
+            border-left: 4px solid #F59E0B;
+            color: #92400E;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            line-height: 1.4;
+            margin-top: 8px;
+        }
+
+        #print-full-report {
+            display: none;
+        }
+
+        .print-cover-block {
+            display: none;
+        }
+
+        @page {
+            size: A4 portrait;
+            margin: 10mm 12mm;
+        }
+
+        @media print {
+            body {
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                color: #000 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .header-actions, .age-tabs, .compare-control, #survey-card-block, .btn, .cover-meta-card {
+                display: none !important;
+            }
+
+            .header {
+                display: none !important;
+            }
+
+            .container {
+                display: block !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .print-cover-block {
+                display: block !important;
+                border-bottom: 2px solid #1F497D;
+                padding-bottom: 6px;
+                margin-bottom: 12px;
+            }
+
+            .print-cover-title {
+                font-size: 18px;
+                font-weight: bold;
+                color: #1F497D;
+            }
+
+            .print-cover-subtitle {
+                font-size: 11px;
+                color: #666;
+                margin-bottom: 6px;
+            }
+
+            .print-cover-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                background: #F4F7FA;
+                padding: 6px 10px;
+                border-radius: 4px;
+                font-size: 11px;
+            }
+
+            .card {
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                background: transparent !important;
+            }
+
+            .chart-container {
+                height: 480px !important;
+                max-height: 520px !important;
+                width: 100% !important;
+                margin: 10px auto !important;
+                display: flex !important;
+                justify-content: center !important;
+            }
+
+            #radarChart {
+                width: 100% !important;
+                height: 100% !important;
+            }
+
+            #eval-section {
+                margin-top: 10px !important;
+            }
+
+            .eval-box, .action-box {
+                padding: 8px 12px !important;
+                font-size: 11px !important;
+                line-height: 1.4 !important;
+                margin-top: 6px !important;
+            }
+
+            h2 {
+                font-size: 13px !important;
+                margin-top: 12px !important;
+                margin-bottom: 6px !important;
+            }
+
+            .metrics-grid {
+                margin-top: 6px !important;
+                gap: 8px !important;
+            }
+
+            .metric-box {
+                padding: 6px 10px !important;
+            }
+
+            .metric-title {
+                font-size: 10px !important;
+                margin-bottom: 2px !important;
+            }
+
+            .metric-value {
+                font-size: 13px !important;
+            }
+
+            .timeline-summary {
+                background: #F8FAFC !important;
+                padding: 6px !important;
+                margin-top: 6px !important;
+                gap: 6px !important;
+            }
+
+            .timeline-item {
+                padding: 4px !important;
+                font-size: 10px !important;
+            }
+
+            #print-full-report {
+                display: block !important;
+                padding-top: 15px;
+                page-break-before: always;
+                break-before: page;
+            }
+
+            .print-age-section {
+                margin-bottom: 12px !important;
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            .print-age-header {
+                font-size: 13px !important;
+                font-weight: bold;
+                color: #1F497D;
+                background: #EDF4F9 !important;
+                padding: 4px 8px !important;
+                margin-bottom: 6px !important;
+                border-left: 4px solid #1F497D;
+            }
+
+            .print-dim-title {
+                font-weight: bold;
+                font-size: 11px !important;
+                color: #2E6B9E;
+                margin: 6px 0 3px 0 !important;
+            }
+
+            .print-q-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 2px 10px;
+            }
+
+            .print-q-item {
+                font-size: 10px !important;
+                line-height: 1.3 !important;
+                margin-bottom: 2px !important;
+                color: #444;
+            }
+
+            .print-q-item.checked {
+                font-weight: bold;
+                color: #1F497D !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="header-title">
+            <h1>全生命週期生活型態轉換軌跡評估系統 v4.1</h1>
+            <p>核心理念：無標準人生軌跡，只有個人化的選擇權與自主動態平衡（20歲 ~ 90歲）</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn" onclick="exportData()">💾 匯出.LIFE備份檔</button>
+            <button class="btn" onclick="document.getElementById('import-file').click()">📂 匯入.LIFE備份檔</button>
+            <input type="file" id="import-file" accept=".life,.json" style="display:none;" onchange="importData(event)">
+            <button class="btn" onclick="triggerPrintReport()">🖨️ 列印評估報告 (PDF)</button>
+            <button class="btn" style="background: rgba(217,83,79,0.3);" onclick="resetAllData()">🔄 清空重來</button>
+        </div>
+    </div>
+
+    <!-- 封面資訊欄位 -->
+    <div class="cover-meta-card">
+        <label>受評人姓名：<input type="text" id="input-client-name" value="" placeholder="請輸入姓名"></label>
+        <label>評估日期：<input type="date" id="input-eval-date"></label>
+        <label>諮詢顧問/機構：<input type="text" id="input-advisor" value="自主人生規劃團隊" placeholder="請輸入顧問名稱"></label>
+    </div>
+
+    <!-- 🖨️ 列印頁首報告抬頭 -->
+    <div class="print-cover-block">
+        <div class="print-cover-title">全生命週期生活型態轉換軌跡評估報告</div>
+        <div class="print-cover-subtitle">核心理念：無標準人生軌跡，只有個人化的選擇權與自主動態平衡（20s ~ 90s）</div>
+        <div class="print-cover-grid">
+            <div><strong>受評對象：</strong><span id="print-client-name">--</span></div>
+            <div><strong>評估日期：</strong><span id="print-eval-date">--</span></div>
+            <div><strong>分析顧問：</strong><span id="print-advisor">--</span></div>
+        </div>
+    </div>
+
+    <!-- 年齡切換頁籤 -->
+    <div class="age-tabs" id="age-tabs"></div>
+
+    <!-- 左側：問卷區 -->
+    <div class="card" id="survey-card-block">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h2 style="margin:0;" id="survey-title">20s 階段評估問卷</h2>
+            <span style="font-size: 12px; color: #666;">（動態解鎖模式：初始30題）</span>
+        </div>
+        <p style="font-size: 13px; color: #666; margin-bottom: 20px;">
+            勾選該維度達 4 題時，系統將自動解鎖「進階挑戰題（+5題）」，評級開放至 Lv. S。
+        </p>
+        <div id="survey-form"></div>
+    </div>
+
+    <!-- 右側：儀表板與雷達圖 -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0;">生活型態軌跡雷達圖</h2>
+                <span class="tag" id="current-age-tag" style="font-size: 13px; padding: 4px 10px;">20s 視角</span>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="radarChart"></canvas>
+            </div>
+
+            <!-- 疊加對比控制 -->
+            <div class="compare-control">
+                <label>
+                    <input type="checkbox" id="enable-compare" onchange="updateCalculations()"> 啟用跨年齡軌跡疊加對比
+                </label>
+                <select id="compare-age-select" onchange="updateCalculations()" disabled>
+                </select>
+            </div>
+
+            <!-- 狀態評語區 -->
+            <div id="eval-section">
+                <div id="eval-current-box" class="eval-box eval-current">
+                    請開始勾選問卷，取得當前視角狀態評語。
+                </div>
+                <div id="eval-compare-box" class="eval-box eval-compare" style="display: none;">
+                    請啟用對比模式以檢視對比視角狀態評語。
+                </div>
+                <!-- 短板指引卡片 -->
+                <div id="action-advice-box" class="action-box">
+                    💡 正在計算當前階段瓶頸與優化指引...
+                </div>
+            </div>
+
+            <h2>當前階段狀態診斷 (生命週期動態加權)</h2>
+            <div class="metrics-grid">
+                <div class="metric-box">
+                    <div class="metric-title">面積覆蓋率</div>
+                    <div class="metric-value" id="coverage-val">0.0%</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-title">失衡指數 (標準差)</div>
+                    <div class="metric-value" id="std-val">0.00</div>
+                </div>
+                <div class="metric-box">
+                    <div class="metric-title">加權算術平均</div>
+                    <div class="metric-value" id="weighted-score-val">1.00</div>
+                </div>
+                <div class="metric-box" style="border-left-color: #2E6B9E; background: #EDF4F9;">
+                    <div class="metric-title">綜合加權評級</div>
+                    <div class="metric-value" id="overall-lvl-val">Lv. I</div>
+                </div>
+            </div>
+
+            <h2>8 大生命級距全景摘要 (20s~90s)</h2>
+            <div class="timeline-summary" id="timeline-summary"></div>
+        </div>
+    </div>
+
+    <!-- 🖨️ 列印專用：問卷勾選詳細記錄 -->
+    <div id="print-full-report"></div>
+</div>
+
+<script>
+document.getElementById('input-eval-date').valueAsDate = new Date();
+
+const ageKeys = ['20s', '30s', '40s', '50s', '60s', '70s', '80s', '90s'];
+let currentAgeIdx = 0;
+
+// 🎯 生命階段動態權重矩陣 (維度順序：財務, 時間, 健康, 精神, 人際, 目標)
+const stageWeights = {
+    '20s': [0.25, 0.15, 0.15, 0.15, 0.15, 0.15],
+    '30s': [0.25, 0.15, 0.15, 0.15, 0.15, 0.15],
+    '40s': [0.20, 0.20, 0.20, 0.15, 0.15, 0.10],
+    '50s': [0.20, 0.20, 0.20, 0.15, 0.15, 0.10],
+    '60s': [0.15, 0.20, 0.25, 0.20, 0.10, 0.10],
+    '70s': [0.15, 0.20, 0.25, 0.20, 0.10, 0.10],
+    '80s': [0.10, 0.20, 0.25, 0.25, 0.10, 0.10],
+    '90s': [0.10, 0.20, 0.25, 0.25, 0.10, 0.10]
+};
+
+const dimensions = [
+    {
+        name: "財務",
+        baseQuestions: [
+            "我擁有至少 6 個月以上（含固定支出與房貸/房租）的流動性預備金，且不與投資本金混淆",
+            "我能精確掌握每月固定與變動支出，且每月的必要開銷控制在總收入的 60% 以下。",
+            "除了低利自住房貸或合理的理財型槓桿外，我完全沒有循環利息、信用貸款或高利負債",
+            "我已配置足額的重大傷病與醫療轉嫁工具，確保極端風險發生時不必變賣核心資產。",
+            "每月收入進帳時，我會優先且自動化地將一定比例（如 20% 以上）撥入長期投資或儲蓄帳戶。"
+        ],
+        advQuestions: [
+            "我的非勞務收入（如股息、債息、租金等）已能穩定覆蓋我當前總生活開銷的 70% 以上",
+            "我的投資組合具備明確的資產配置（如股票、債券、現金或房產比例），能承受 30% 以上的大盤回檔而不影響生活與心理。",
+            "我的非勞務收入已能 100% 完全覆蓋我當前乃至未來的理想生活總開銷。",
+            "我熟悉並善用各種合法稅務結構、投資交易成本控制與政府政策，極大化整體資產的稅後年化報酬。",
+            "我已釐清退休後的預期花費，並有一套具體的現金流計畫（結合資產配息、資本利得變現或其他流動性來源）來穩定填補資金缺口。"
+        ],
+        advice: "建議優先建立 6 個月緊急預備金與被動收入流，減輕經濟焦慮，提高生活選擇底氣。"
+    },
+    {
+        name: "時間",
+        baseQuestions: [
+            "扣除工作與必要雜務，我每天至少能擁有 1~2 小時完全屬於自己、不受他人干擾的連續時間（如運動、閱讀、放空）。",
+            "下班或假期期間，非極端緊急狀況下，我可以不必「秒回」工作訊息，且不會感到強烈的罪惡感與焦慮。",
+            "對於明確無意義的應酬、無效會議或社交邀約，我具備適度婉拒或果斷抽身的自主權。",
+            "在每天忙碌的行程中，我能主動決定並優先處理最重要的事情，而不是整天被突發狀況牽著鼻子走。",
+            "我可以依照個人需求，提前規劃並順利請假 3~5 天進行休息或旅行，而不必擔心職場同儕的強烈壓力。"
+        ],
+        advQuestions: [
+            "我清楚知道自己一天中何時精神最好、頭腦最清醒，並能盡可能將需要高度思考、決策或創造的難題安排在該時段處理。",
+            "我願意且已習慣善用數位工具或付費服務（如掃地機器人、叫車代步、外送、定時清潔），來幫自己省下重複性高、消耗體力的日常瑣事。",
+            "在繁忙的每週行程中，我會主動留出「完全不排事情」的時間來思考、整理近況或休息，且不會產生「自己在偷懶」的負罪感。",
+            "我可以根據個人或家庭的階段需求，主動微調未來 3~6 個月的生活重心與步調（例如：階段性衝刺、適度降速或安排長程規劃）。",
+            "我對自己 90% 以上的時間擁有絕對支配權，能 100% 自主決定何時、何地、與誰、以及投入何種事業或興趣。"
+        ],
+        advice: "建議練習『時間塊狀化』並果斷裁撤低價值社交與無效排程，將黃金時間留給核心目標。"
+    },
+    {
+        name: "健康",
+        baseQuestions: [
+            "我每天能擁有 6~8 小時的高品質睡眠，且起床後感覺精神飽滿、身體得到實質修復，而非長期依賴咖啡因硬撐。",
+            "我目前沒有需要長期服藥控制的重度慢性病，且日常生活中沒有長期困擾我的嚴重慢性疼痛（如偏頭痛、嚴重腰痠背痛或腸胃潰瘍..等）。",
+            "我的日常飲食以原型食物為主，能主動控糖、控高加工食品，且能維持穩定且高品質的營養攝取（如充足蛋白質與優質油脂）。",
+            "除了久坐工作外，我每天在日常生活中能保持基本的活動量（如多走動、走樓梯、站立伸展），不會整天處於完全不動的極端久坐狀態。",
+            "我每年會定期進行完整的健康檢查，並對自己的核心健康數據（如血壓、血糖、血脂、體脂率等）有明確的了解與管理概念。"
+        ],
+        advQuestions: [
+            "我具備良好的心肺功能（如能順暢完成 30 分鐘以上的有氧運動或快走），日常爬樓梯或稍微快走時不會輕易喘不過氣。",
+            "我每週至少進行 2 次以上、每次 30 分鐘以上的系統化訓練（如肌力、重量訓練或高強度間歇），以維持肌肉量與關節穩定度。",
+            "當面臨高壓或突發危機時，我能透過運動、呼吸或心態調適快速平復情緒與身體緊張感，不會長期處於高交感神經亢奮狀態。",
+            "我的體脂率與肌肉量維持在同齡人的優良區間，且擁有充沛的體能，足以應付突發的高強度體力需求或長途旅程而不易疲憊。",
+            "除壽命長度外，更追求「壽命品質」，更主動透過科學化運動、精準營養與生活型態管理，確保自己在高齡時機制運作順暢，保有完全自理與高品質的活動能力。"
+        ],
+        advice: "健康是所有自由的基石，建議引入科學數據追蹤（如靜止心率、睡眠監測）與專屬訓練菜單。"
+    },
+    {
+        name: "精神",
+        baseQuestions: [
+            "遭遇挫折、被否定或遇到突發壞消息時，我能在一兩天內調整好情緒並恢復理性，而不是陷入長期的低潮或反覆內耗。",
+            "看見身邊同儕、朋友或社群媒體上的成功與好生活時，我能真心祝福或保持平淡，不會因此產生強烈的自卑、焦慮或嫉妒。",
+            "做選擇或決定時，我是基於自己的真實需求與價值觀，而不是為了討好父母、伴侶或滿足社會眼光。",
+            "我能主動控制自己刷手機、看新聞或社群軟體的時間，不會被無意義的八卦、流量焦慮或恐懼訊息帶著走。",
+            "當自己犯錯、表現不如預期或出現低潮時，我能給予自己理解與接納，而不是進行殘酷的自我批判與懲罰。"
+        ],
+        advQuestions: [
+            "我能經常進入全神貫注的「心流狀態」，且在面對失誤或挑戰時，具備良好的客觀自省與自我檢討能力，能理性修正方向而非盲目自滿或推卸責任。",
+            "在完全一個人、沒有手機或外在娛樂干擾的情況下，我能平靜且安詳地與自己獨處，不會感到空虛或恐慌。",
+            "我清楚知道自己最看重的核心價值（如自由、家庭、成長、健康等），且在面臨重大選擇時能以此為依據做出不後悔的決定。",
+            "面對不確定的未來或環境變化，我心裡有強大的底氣與坦然，不會對未發生的極端狀況產生毀滅性的恐慌。",
+            "我的生活與努力不只為了個人利害，更能感受到自己正連結著某個超越自我的目標（如利他、傳承、創造價值或對身邊的人有所貢獻）。"
+        ],
+        advice: "建議建立定期的獨處與文字梳理機制，擺脫外界評價束縛，找回內在主導權與平靜。"
+    },
+    {
+        name: "人際",
+        baseQuestions: [
+            "面對親友、伴侶或同事的不合理要求或情緒勒索，我能清楚守住底線並勇敢拒絕，不靠「委屈自己」來維持關係。",
+            "當我遇到人生重大低潮或危機時，我身邊至少有 1~3 位能完全信任、可以坦承脆弱並獲得實質或心理支持的人（如伴侶、家人或生死之交）。",
+            "對於長期消耗我、傳播極端負能量、或習慣背後批判我的「毒性關係」，我具備果斷遠離或保持安全距離的能力。",
+            "與最親密的伴侶或核心家人相處時，我們能進行理性、坦誠且具建設性的溝通，而不是長期處於冷戰、暴怒或壓抑狀態。",
+            "在日常職場或常態社交圈中，我能與大多數人保持禮貌、順暢且互信的合作關係，不會動輒陷入無謂的人事紛爭或對立。"
+        ],
+        advQuestions: [
+            "在伴侶、親情、友情或職場關係中，我深刻明白「人數最不重要，質量才是關鍵」；比起擁有很多無效交情，我更重視並經營少數能帶來深刻啟發與互相扶持的良師益友。",
+            "在人際互動中，我習慣先思考「我能為對方提供什麼價值/協助」（如資源、資訊、情緒價值），而非單方面索取。",
+            "在人生或事業重要關頭，我有能夠請益的長輩/導師（Mentor），同時我也願意成為後輩或他人的支持者。",
+            "與人交流時，我能放下手機與主觀偏見，進行高質量的「深度傾聽與同理」，讓對方感到被尊重、被理解與被支持。",
+            "我所建立的人際網絡是一個能夠「互相滋養、資源互信、彼此成就」的正向生態系，大家真心為彼此的成功感到高興。"
+        ],
+        advice: "建議主動設定清晰的心理界線，勇敢切斷消耗能量的關係，專注於深度質量的社群夥伴。"
+    },
+    {
+        name: "目標",
+        baseQuestions: [
+            "我清楚知道自己未來 1~3 個月內最重要的 1~2 個核心目標（如完成某項專案、建立某個健康習慣、達成某個微小的財務階段），並有明確的完成期限。",
+            "面對較大的目標時，我能將它拆解成每週甚至每天可以執行的「小步行動」，並且能真正動起來，而不是只停留在空想與口頭說說。",
+            "在追求當前目標的過程中，我能主動過濾掉無關的機會、雜音或一時的新鮮感，集中精力把最重要的事情做好。",
+            "當計畫趕不上變化或執行遭遇挫折時，我不會輕易放棄，而是能理性分析原因、微調策略並重新出發。",
+            "我養成了定期（如每週或每月）回顧自己進度與執行狀況的習慣，清楚知道自己離目標還有多遠。"
+        ],
+        advQuestions: [
+            "我對自己未來 3~5 年想要成為的樣子、生活型態與事業狀態，擁有清晰且讓人期待的圖像藍圖。",
+            "我的目標是出於內心真正的熱情與價值追求，而不是為了迎合父母、同儕壓力或社會眼光而立下的「假目標」。",
+            "比起單靠「意志力」苦撐，我更擅長透過打造環境、流程與自動化習慣（System over Goals），讓目標的達成變得自然且可持續。",
+            "我在設定事業或成就目標時，會同時兼顧財務、健康、時間與人際的平衡，不會為了單一目標而摧毀人生的其他重要維度。",
+            "我的終極目標不僅是個人的成功，更能讓我發揮天賦、實現自我價值，並對身邊的人或社會帶來正向的改變與影響。"
+        ],
+        advice: "建議將宏大的願景拆解為「本週可執行的微小習慣」，並確保目標與真實內在渴望一致。"     
+    }
+];
+
+const levelMap = ["I", "I", "H", "G", "F", "E", "D", "C", "B", "A", "S"];
+let ageDataStore = {};
+
+function initDataStore() {
+    ageKeys.forEach(age => {
+        ageDataStore[age] = Array.from({ length: 6 }, () => new Set());
+    });
+}
+initDataStore();
+
+// 💾 完整自動儲存機制：包含問卷勾選狀態與封面個人資訊
+function saveToLocalStorage() {
+    const exportable = {};
+    ageKeys.forEach(age => {
+        exportable[age] = ageDataStore[age].map(set => Array.from(set));
+    });
+
+    const metaData = {
+        clientName: document.getElementById('input-client-name').value,
+        evalDate: document.getElementById('input-eval-date').value,
+        advisor: document.getElementById('input-advisor').value
+    };
+
+    localStorage.setItem('lifestyle_v4_data', JSON.stringify(exportable));
+    localStorage.setItem('lifestyle_v4_meta', JSON.stringify(metaData));
+}
+
+// 📂 自動讀取機制
+function loadFromLocalStorage() {
+    // 1. 讀取問卷勾選狀態
+    const rawData = localStorage.getItem('lifestyle_v4_data');
+    if (rawData) {
+        try {
+            const parsed = JSON.parse(rawData);
+            ageKeys.forEach(age => {
+                if (parsed[age]) {
+                    ageDataStore[age] = parsed[age].map(arr => new Set(arr));
+                }
+            });
+        } catch (e) {
+            console.error("問卷資料載入失敗:", e);
+        }
+    }
+
+    // 2. 讀取封面個人資訊
+    const rawMeta = localStorage.getItem('lifestyle_v4_meta');
+    if (rawMeta) {
+        try {
+            const meta = JSON.parse(rawMeta);
+            if (meta.clientName !== undefined) document.getElementById('input-client-name').value = meta.clientName;
+            if (meta.evalDate) document.getElementById('input-eval-date').value = meta.evalDate;
+            if (meta.advisor !== undefined) document.getElementById('input-advisor').value = meta.advisor;
+        } catch (e) {
+            console.error("基本資訊載入失敗:", e);
+        }
+    }
+}
+
+function exportData() {
+    const exportable = {};
+    ageKeys.forEach(age => {
+        exportable[age] = ageDataStore[age].map(set => Array.from(set));
+    });
+    
+    const payload = {
+        data: exportable,
+        meta: {
+            clientName: document.getElementById('input-client-name').value,
+            evalDate: document.getElementById('input-eval-date').value,
+            advisor: document.getElementById('input-advisor').value
+        }
+    };
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/octet-stream' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `life_map_backup_${new Date().toISOString().slice(0,10)}.life`;
+    a.click();
+}
+
+function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const parsed = JSON.parse(e.target.result);
+            
+            // 相容性處理：支援舊版僅存 data 或新版包含 meta 的格式
+            const dataToImport = parsed.data || parsed;
+            ageKeys.forEach(age => {
+                if (dataToImport[age]) {
+                    ageDataStore[age] = dataToImport[age].map(arr => new Set(arr));
+                }
+            });
+
+            if (parsed.meta) {
+                if (parsed.meta.clientName !== undefined) document.getElementById('input-client-name').value = parsed.meta.clientName;
+                if (parsed.meta.evalDate) document.getElementById('input-eval-date').value = parsed.meta.evalDate;
+                if (parsed.meta.advisor !== undefined) document.getElementById('input-advisor').value = parsed.meta.advisor;
+            }
+
+            saveToLocalStorage();
+            renderSurvey();
+            updateCalculations();
+            alert(`已成功匯入備份資料！`);
+        } catch (err) {
+            alert("檔案格式不正確，匯入失敗。");
+        }
+    };
+    reader.readAsText(file);
+}
+
+function resetAllData() {
+    if (confirm("確定要清空所有 8 大生命級距與個人資料嗎？此操作無法復原。")) {
+        localStorage.removeItem('lifestyle_v4_data');
+        localStorage.removeItem('lifestyle_v4_meta');
+        initDataStore();
+        document.getElementById('input-client-name').value = '';
+        document.getElementById('input-eval-date').valueAsDate = new Date();
+        document.getElementById('input-advisor').value = '自主人生規劃團隊';
+        renderSurvey();
+        updateCalculations();
+    }
+}
+
+function triggerPrintReport() {
+    document.getElementById('print-client-name').innerText = document.getElementById('input-client-name').value || '未提供';
+    document.getElementById('print-eval-date').innerText = document.getElementById('input-eval-date').value || '未提供';
+    document.getElementById('print-advisor').innerText = document.getElementById('input-advisor').value || '未提供';
+
+    const printContainer = document.getElementById('print-full-report');
+    const isCompare = document.getElementById('enable-compare').checked;
+    
+    const agesToPrint = [ageKeys[currentAgeIdx]];
+    if (isCompare) {
+        const compareAgeIdx = parseInt(document.getElementById('compare-age-select').value);
+        if (compareAgeIdx !== currentAgeIdx) {
+            agesToPrint.push(ageKeys[compareAgeIdx]);
+        }
+    }
+
+    let printHTML = `<h2 style="font-size: 14px; color: #1F497D; border-bottom: 2px solid #1F497D; padding-bottom: 4px; margin-top: 0; margin-bottom: 8px;">📋 問卷勾選詳細記錄 (${agesToPrint.join(' vs ')} 視角)</h2>`;
+
+    agesToPrint.forEach((ageKey) => {
+        const scores = getScoresForAge(ageKey);
+        const weights = stageWeights[ageKey];
+        const weightedScore = scores.reduce((sum, s, idx) => sum + s * weights[idx], 0);
+        const overallLvlIdx = Math.min(Math.max(Math.round(weightedScore) - 1, 0), 10);
+        const overallLevel = levelMap[overallLvlIdx];
+
+        printHTML += `<div class="print-age-section">
+            <div class="print-age-header">階段：${ageKey} 視角（綜合加權評級：Lv. ${overallLevel} | 加權得分：${weightedScore.toFixed(2)}）</div>`;
+
+        dimensions.forEach((dim, dimIdx) => {
+            const checkedSet = ageDataStore[ageKey][dimIdx];
+            const score = scores[dimIdx];
+            const lvl = levelMap[score - 1];
+            const w = (weights[dimIdx] * 100).toFixed(0);
+
+            printHTML += `<div class="print-dim-title">【${dim.name} 維度】 得分：${score} 分 (Lv. ${lvl}) <span style="font-size:10px; color:#666;">[階段權重 ${w}%]</span></div>`;
+            printHTML += `<div class="print-q-grid">`;
+
+            dim.baseQuestions.forEach((q, qIdx) => {
+                const qId = `b_${qIdx}`;
+                const isChecked = checkedSet.has(qId);
+                printHTML += `<div class="print-q-item ${isChecked ? 'checked' : ''}">
+                    ${isChecked ? '☑ [O]' : '☐ [ ]'} ${qIdx + 1}. [基礎] ${q}
+                </div>`;
+            });
+
+            dim.advQuestions.forEach((q, qIdx) => {
+                const qId = `a_${qIdx}`;
+                const isChecked = checkedSet.has(qId);
+                printHTML += `<div class="print-q-item ${isChecked ? 'checked' : ''}">
+                    ${isChecked ? '☑ [O]' : '☐ [ ]'} ${qIdx + 6}. [進階] ${q}
+                </div>`;
+            });
+
+            printHTML += `</div>`;
+        });
+
+        printHTML += `</div>`;
+    });
+
+    printContainer.innerHTML = printHTML;
+    window.print();
+}
+
+const ageTabsContainer = document.getElementById('age-tabs');
+const compareSelect = document.getElementById('compare-age-select');
+
+ageKeys.forEach((age, idx) => {
+    const tab = document.createElement('div');
+    tab.className = `age-tab ${idx === 0 ? 'active' : ''}`;
+    tab.innerText = age;
+    tab.onclick = () => switchAgeTab(idx);
+    ageTabsContainer.appendChild(tab);
+
+    const opt = document.createElement('option');
+    opt.value = idx;
+    opt.innerText = `${age} 階段`;
+    if (idx === 1) opt.selected = true;
+    compareSelect.appendChild(opt);
+});
+
+function switchAgeTab(idx) {
+    currentAgeIdx = idx;
+    document.querySelectorAll('.age-tab').forEach((tab, i) => {
+        tab.classList.toggle('active', i === idx);
+    });
+    document.getElementById('survey-title').innerText = `${ageKeys[idx]} 階段評估問卷`;
+    document.getElementById('current-age-tag').innerText = `${ageKeys[idx]} 視角`;
+    
+    renderSurvey();
+    updateCalculations();
+}
+
+function renderSurvey() {
+    const currentAgeKey = ageKeys[currentAgeIdx];
+    const formContainer = document.getElementById('survey-form');
+    formContainer.innerHTML = '';
+
+    dimensions.forEach((dim, dimIdx) => {
+        const block = document.createElement('div');
+        block.className = 'dimension-block';
+
+        const checkedSet = ageDataStore[currentAgeKey][dimIdx];
+        const baseCheckedCount = dim.baseQuestions.filter((_, qIdx) => checkedSet.has(`b_${qIdx}`)).length;
+        const isUnlocked = baseCheckedCount >= 4;
+        const weightPct = (stageWeights[currentAgeKey][dimIdx] * 100).toFixed(0);
+
+        let html = `
+            <div class="dimension-title">
+                <span>${dim.name} 維度 <span style="font-size:11px; color:#666; font-weight:normal;">(階段權重: ${weightPct}%)</span></span>
+                <span class="tag" id="tag-${dimIdx}">1 分 (Lv. I)</span>
+            </div>
+        `;
+
+        dim.baseQuestions.forEach((q, qIdx) => {
+            const qId = `b_${qIdx}`;
+            const isChecked = checkedSet.has(qId);
+            html += `
+                <label class="question-item">
+                    <input type="checkbox" data-dim="${dimIdx}" data-qid="${qId}" ${isChecked ? 'checked' : ''} onchange="handleCheckboxChange(${dimIdx}, '${qId}', this.checked)">
+                    <span>${qIdx + 1}. [基礎] ${q}</span>
+                </label>
+            `;
+        });
+
+        if (isUnlocked) {
+            html += `<div class="unlocked-block">
+                <div style="font-size: 12px; font-weight: bold; color: var(--secondary-color); margin-bottom: 8px;">
+                    🔓 已解鎖進階挑戰題（目標衝刺 Lv. A / S）：
+                </div>`;
+            dim.advQuestions.forEach((q, qIdx) => {
+                const qId = `a_${qIdx}`;
+                const isChecked = checkedSet.has(qId);
+                html += `
+                    <label class="question-item">
+                        <input type="checkbox" data-dim="${dimIdx}" data-qid="${qId}" ${isChecked ? 'checked' : ''} onchange="handleCheckboxChange(${dimIdx}, '${qId}', this.checked)">
+                        <span>${qIdx + 6}. [進階] ${q}</span>
+                    </label>
+                `;
+            });
+            html += `</div>`;
+        } else {
+            html += `<div style="font-size: 12px; color: #888; margin-top: 6px; font-style: italic;">
+                💡 勾選滿 4 題基礎題以解鎖進階 5 題...
+            </div>`;
+        }
+
+        block.innerHTML = html;
+        formContainer.appendChild(block);
+    });
+}
+
+function handleCheckboxChange(dimIdx, qId, isChecked) {
+    const currentAgeKey = ageKeys[currentAgeIdx];
+    const checkedSet = ageDataStore[currentAgeKey][dimIdx];
+
+    if (isChecked) {
+        checkedSet.add(qId);
+    } else {
+        checkedSet.delete(qId);
+    }
+
+    const baseCheckedCount = dimensions[dimIdx].baseQuestions.filter((_, qIdx) => checkedSet.has(`b_${qIdx}`)).length;
+    const shouldUnlock = baseCheckedCount >= 4;
+    
+    if (!shouldUnlock) {
+        dimensions[dimIdx].advQuestions.forEach((_, qIdx) => checkedSet.delete(`a_${qIdx}`));
+    }
+
+    saveToLocalStorage();
+    renderSurvey();
+    updateCalculations();
+}
+
+// 🎯 【繪製外掛】：幾何定位 1~6 號數字標籤與指向箭頭
+const radarCyclePlugin = {
+    id: 'radarCyclePlugin',
+    afterDraw(chart) {
+        const scale = chart.scales.r;
+        if (!scale || scale.xCenter === undefined) return;
+
+        const { ctx } = chart;
+        const xCenter = scale.xCenter;
+        const yCenter = scale.yCenter;
+        const outerRadius = scale.drawingArea;
+
+        const radius = outerRadius * 1.06;
+
+        ctx.save();
+
+        const dimAngles = [];
+        for (let i = 0; i < 6; i++) {
+            dimAngles.push(-Math.PI / 2 + (i * Math.PI / 3));
+        }
+
+        const arrowColor = '#F39C12';  
+        const badgeBgColor = '#F1C40F';
+
+        for (let i = 0; i < 6; i++) {
+            const startAngle = dimAngles[i];
+            const targetAngle = dimAngles[(i + 1) % 6];
+
+            const arcStart = startAngle + 0.24;
+            const arcEnd = targetAngle - 0.24;
+
+            ctx.beginPath();
+            ctx.setLineDash([4, 3]);
+            ctx.strokeStyle = arrowColor;
+            ctx.lineWidth = 2;
+            ctx.arc(xCenter, yCenter, radius, arcStart, arcEnd, false);
+            ctx.stroke();
+
+            const arrowX = xCenter + radius * Math.cos(arcEnd);
+            const arrowY = yCenter + radius * Math.sin(arcEnd);
+
+            ctx.save();
+            ctx.translate(arrowX, arrowY);
+            ctx.rotate(arcEnd + Math.PI / 2);
+
+            ctx.fillStyle = arrowColor;
+            ctx.setLineDash([]);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-4, -8);
+            ctx.lineTo(4, -8);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+
+            const midAngle = startAngle + (Math.PI / 6);
+            const badgeDist = radius + 12;
+            const badgeX = xCenter + badgeDist * Math.cos(midAngle);
+            const badgeY = yCenter + badgeDist * Math.sin(midAngle);
+
+            ctx.beginPath();
+            ctx.setLineDash([]);
+            ctx.fillStyle = badgeBgColor;
+            ctx.arc(badgeX, badgeY, 9.5, 0, 2 * Math.PI);
+            ctx.fill();
+
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = '#D35400';
+            ctx.stroke();
+
+            ctx.fillStyle = '#1F497D';
+            ctx.font = 'bold 11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(i + 1, badgeX, badgeY + 0.5);
+        }
+
+        ctx.restore();
+    }
+};
+
+const ctx = document.getElementById('radarChart').getContext('2d');
+const radarChart = new Chart(ctx, {
+    type: 'radar',
+    data: {
+        labels: dimensions.map(d => d.name),
+        datasets: [
+            {
+                label: '當前視角 (20s)',
+                data: [1, 1, 1, 1, 1, 1],
+                backgroundColor: 'rgba(31, 73, 125, 0.25)',
+                borderColor: '#1F497D',
+                borderWidth: 2.5,
+                pointBackgroundColor: '#1F497D'
+            },
+            {
+                label: '對比視角 (30s)',
+                data: [1, 1, 1, 1, 1, 1],
+                backgroundColor: 'rgba(217, 83, 79, 0.15)',
+                borderColor: '#D9534F',
+                borderWidth: 2.5,
+                borderDash: [4, 4],
+                pointBackgroundColor: '#D9534F',
+                hidden: true
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: {
+            padding: 45
+        },
+        scales: {
+            r: {
+                min: 0,
+                max: 11,
+                ticks: { stepSize: 2, display: true },
+                pointLabels: {
+                    font: {
+                        size: 11,
+                        weight: 'bold'
+                    }
+                }
+            }
+        },
+        plugins: {
+            legend: { 
+                position: 'bottom',
+                labels: {
+                    padding: 8,
+                    font: { size: 11 }
+                }
+            }
+        }
+    },
+    plugins: [radarCyclePlugin]
+});
+
+function getScoresForAge(ageKey) {
+    const ageData = ageDataStore[ageKey];
+    return dimensions.map((dim, dimIdx) => {
+        const checkedSet = ageData[dimIdx];
+        return checkedSet.size + 1;
+    });
+}
+
+function generateEvalComment(scores, ageKey) {
+    let areaSum = 0;
+    for (let i = 0; i < 6; i++) {
+        areaSum += scores[i] * scores[(i + 1) % 6];
+    }
+    const area = (Math.sqrt(3) / 4) * areaSum;
+    const maxArea = (Math.sqrt(3) / 4) * (11 * 11 * 6);
+    const coverage = (area / maxArea) * 100;
+
+    const mean = scores.reduce((a, b) => a + b, 0) / 6;
+    const variance = scores.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / 6;
+    const stdDev = Math.sqrt(variance);
+
+    const weights = stageWeights[ageKey];
+    const weightedScore = scores.reduce((sum, s, idx) => sum + s * weights[idx], 0);
+    const overallLvlIdx = Math.min(Math.max(Math.round(weightedScore) - 1, 0), 10);
+    const overallLevel = levelMap[overallLvlIdx];
+
+    let text = `<strong>【${ageKey} 階段診斷 (動態加權評級：Lv. ${overallLevel} | 加權分：${weightedScore.toFixed(2)})】</strong><br>`;
+    
+    if (coverage >= 60 && stdDev <= 1.5) {
+        text += "🌟 <strong>高品質動態平衡狀態</strong>：在此生命階段展現出極高掌控度與自主權，關鍵槓桿維度發展成熟，六大維度和諧協同。";
+    } else if (coverage >= 60 && stdDev > 1.5) {
+        text += "⚡ <strong>單點衝刺高能狀態</strong>：階段核心維度表現亮眼，但維度間落差較大。請注意次要維度（如健康或時間）是否正在被過度透支。";
+    } else if (coverage < 60 && stdDev <= 1.5) {
+        text += "🌱 <strong>平穩沉睡待開發狀態</strong>：整體發展極為均衡，但各維度深耕程度不足。建議選定該階段權重最高的核心槓桿進行突破。";
+    } else {
+        text += "⚠️ <strong>轉型期瓶頸與赤字狀態</strong>：存在顯著的短板赤字，且系統性失衡較大。建議先暫停高消耗行程，從預備金與時間塊狀化打底救援。";
+    }
+
+    return text;
+}
+
+function updateActionAdvice(scores, ageKey) {
+    const minScore = Math.min(...scores);
+    const lowestIndices = [];
+    scores.forEach((s, i) => {
+        if (s === minScore) lowestIndices.push(i);
+    });
+
+    const lowestNames = lowestIndices.map(i => dimensions[i].name).join('、');
+    const minLvl = levelMap[minScore - 1];
+
+    let adviceText = `<strong>🎯 【${ageKey} 階段重點突破指引】</strong><br>`;
+    adviceText += `當前相對短板維度為：<strong>${lowestNames} (${minScore}分 / Lv. ${minLvl})</strong>。<br>`;
+    lowestIndices.forEach(idx => {
+        const wPct = (stageWeights[ageKey][idx] * 100).toFixed(0);
+        adviceText += `👉 <strong>${dimensions[idx].name}方向 (本階段權重 ${wPct}%)：</strong> ${dimensions[idx].advice}<br>`;
+    });
+
+    document.getElementById('action-advice-box').innerHTML = adviceText;
+}
+
+function updateCalculations() {
+    const currentAgeKey = ageKeys[currentAgeIdx];
+    const currentScores = getScoresForAge(currentAgeKey);
+    const currentWeights = stageWeights[currentAgeKey];
+
+    dimensions.forEach((dim, dimIdx) => {
+        const score = currentScores[dimIdx];
+        const lvl = levelMap[score - 1];
+        const tag = document.getElementById(`tag-${dimIdx}`);
+        if (tag) tag.innerText = `${score} 分 (Lv. ${lvl})`;
+        radarChart.data.labels[dimIdx] = `${dim.name} (Lv. ${lvl})`;
+    });
+
+    radarChart.data.datasets[0].label = `當前視角 (${currentAgeKey})`;
+    radarChart.data.datasets[0].data = currentScores;
+
+    const isCompare = document.getElementById('enable-compare').checked;
+    compareSelect.disabled = !isCompare;
+    const compareBox = document.getElementById('eval-compare-box');
+    
+    if (isCompare) {
+        const compareAgeIdx = parseInt(compareSelect.value);
+        const compareAgeKey = ageKeys[compareAgeIdx];
+        const compareScores = getScoresForAge(compareAgeKey);
+
+        radarChart.data.datasets[1].label = `對比視角 (${compareAgeKey})`;
+        radarChart.data.datasets[1].data = compareScores;
+        radarChart.data.datasets[1].hidden = false;
+
+        compareBox.style.display = 'block';
+        compareBox.innerHTML = generateEvalComment(compareScores, compareAgeKey);
+    } else {
+        radarChart.data.datasets[1].hidden = true;
+        compareBox.style.display = 'none';
+    }
+
+    radarChart.update();
+
+    document.getElementById('eval-current-box').innerHTML = generateEvalComment(currentScores, currentAgeKey);
+    updateActionAdvice(currentScores, currentAgeKey);
+
+    let areaSum = 0;
+    for (let i = 0; i < 6; i++) {
+        areaSum += currentScores[i] * currentScores[(i + 1) % 6];
+    }
+    const area = (Math.sqrt(3) / 4) * areaSum;
+    const maxArea = (Math.sqrt(3) / 4) * (11 * 11 * 6);
+    const coverage = (area / maxArea) * 100;
+
+    const mean = currentScores.reduce((a, b) => a + b, 0) / 6;
+    const variance = currentScores.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / 6;
+    const stdDev = Math.sqrt(variance);
+
+    const weightedScore = currentScores.reduce((sum, s, idx) => sum + s * currentWeights[idx], 0);
+    const overallLvlIdx = Math.min(Math.max(Math.round(weightedScore) - 1, 0), 10);
+    const overallLevel = levelMap[overallLvlIdx];
+
+    document.getElementById('coverage-val').innerText = coverage.toFixed(1) + '%';
+    document.getElementById('std-val').innerText = stdDev.toFixed(2);
+    document.getElementById('weighted-score-val').innerText = weightedScore.toFixed(2);
+    document.getElementById('overall-lvl-val').innerText = `Lv. ${overallLevel}`;
+
+    renderTimelineSummary();
+}
+
+function renderTimelineSummary() {
+    const summaryContainer = document.getElementById('timeline-summary');
+    summaryContainer.innerHTML = '';
+
+    ageKeys.forEach((age, idx) => {
+        const scores = getScoresForAge(age);
+        const weights = stageWeights[age];
+        const weightedScore = scores.reduce((sum, s, i) => sum + s * weights[i], 0);
+        const overallLvlIdx = Math.min(Math.max(Math.round(weightedScore) - 1, 0), 10);
+        const lvl = levelMap[overallLvlIdx];
+
+        const item = document.createElement('div');
+        item.className = `timeline-item ${idx === currentAgeIdx ? 'active' : ''}`;
+        item.innerHTML = `
+            <div>${age}</div>
+            <div style="font-size:13px; margin-top:2px; font-weight:bold;">Lv. ${lvl}</div>
+        `;
+        item.onclick = () => switchAgeTab(idx);
+        summaryContainer.appendChild(item);
+    });
+}
+
+// 🔗 綁定文字框自動儲存事件
+document.getElementById('input-client-name').addEventListener('input', saveToLocalStorage);
+document.getElementById('input-eval-date').addEventListener('change', saveToLocalStorage);
+document.getElementById('input-advisor').addEventListener('input', saveToLocalStorage);
+
+// 初始化載入
+loadFromLocalStorage();
+renderSurvey();
+updateCalculations();
+</script>
+
+</body>
+</html>

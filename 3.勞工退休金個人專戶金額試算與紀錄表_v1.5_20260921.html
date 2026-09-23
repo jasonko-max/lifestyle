@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>勞工退休金個人專戶金額試算與紀錄表 v1.5</title>
+    <style>
+        :root {
+            --primary-navy: #1b365d;
+            --primary-blue: #2c5282;
+            --accent-blue: #3182ce;
+            --light-blue-bg: #ebf8ff;
+            --input-bg: #ebf8ff;
+            --input-border: #bee3f8;
+            --table-header-bg: #1b365d;
+            --sub-header-bg: #2b6cb0;
+            --highlight-yellow: #fefcbf;
+            --highlight-green: #e6fffa;
+            --text-dark: #2d3748;
+            --text-red: #e53e3e;
+            --border-color: #cbd5e0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Microsoft JhengHei", sans-serif;
+            background-color: #f7fafc;
+            color: var(--text-dark);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1600px;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* 頂部 Header */
+        .app-header {
+            background: linear-gradient(135deg, #1a365d 0%, #2a4365 100%);
+            color: #ffffff;
+            padding: 18px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header-title h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        .header-title p {
+            margin: 4px 0 0 0;
+            font-size: 13px;
+            color: #e2e8f0;
+            opacity: 0.9;
+        }
+
+        .action-btn-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .header-btn {
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 7px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .header-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .header-btn-danger {
+            background: rgba(229, 62, 62, 0.2);
+            border-color: rgba(229, 62, 62, 0.4);
+        }
+
+        .header-btn-danger:hover {
+            background: rgba(229, 62, 62, 0.4);
+            border-color: rgba(229, 62, 62, 0.6);
+        }
+
+        .table-responsive {
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            table-layout: fixed;
+        }
+
+        th, td {
+            padding: 5px 2px;
+            text-align: center;
+            font-size: 12.5px;
+            border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+            word-break: break-word;
+        }
+
+        th:last-child, td:last-child {
+            border-right: none;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .section-header {
+            background-color: #fef3c7;
+            color: #78350f;
+            font-weight: 700;
+            font-size: 13.5px;
+        }
+
+        .sub-header {
+            background-color: var(--sub-header-bg);
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .label-cell {
+            background-color: #fffbe3;
+            font-weight: 600;
+            color: #744210;
+        }
+
+        /* 輸入框樣式 */
+        .input-cell {
+            background-color: var(--input-bg) !important;
+            padding: 2px;
+        }
+
+        .input-cell input {
+            width: 95%;
+            height: 26px;
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            background-color: #ffffff;
+            text-align: center;
+            font-size: 12.5px;
+            font-weight: 700;
+            color: #2b6cb0;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        .input-cell input:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 2px rgba(49, 130, 206, 0.2);
+        }
+
+        .highlight-yellow {
+            background-color: var(--highlight-yellow) !important;
+            font-weight: 700;
+            color: #744210;
+        }
+
+        .highlight-green {
+            background-color: var(--highlight-green) !important;
+            font-weight: 700;
+            color: #234e52;
+        }
+
+        .text-red {
+            color: var(--text-red);
+            font-weight: 700;
+        }
+
+        .val-text {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .calc-symbol {
+            font-weight: bold;
+            color: #4a5568;
+            background-color: #f8fafc;
+        }
+
+        .empty-cell {
+            background-color: #f8fafc;
+        }
+
+        .footer-action-area {
+            padding: 0 20px 20px 20px;
+        }
+
+        .info-note {
+            font-size: 12.5px;
+            color: #4a5568;
+            line-height: 1.5;
+            background-color: #f7fafc;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border-left: 4px solid var(--primary-blue);
+        }
+
+        .info-note a {
+            color: var(--accent-blue);
+            text-decoration: underline;
+            font-weight: 600;
+        }
+
+        @media print {
+            body { padding: 0; background-color: #ffffff; }
+            .container { box-shadow: none; border: none; width: 100%; }
+            .action-btn-group { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="app-header">
+        <div class="header-title">
+            <h1>勞工退休金個人專戶金額試算與紀錄表</h1>
+            <p>※ 公告收益預估損益金額與實際收益金額可能會不同，以實際收益為準</p>
+        </div>
+        <div class="action-btn-group">
+            <button type="button" class="header-btn" onclick="exportData()">💾 匯出 .LABOR 備份檔</button>
+            <button type="button" class="header-btn" onclick="document.getElementById('importFileInput').click()">📁 匯入 .LABOR 備份檔</button>
+            <button type="button" class="header-btn" onclick="window.print()">🖨️ 列印評估報告 (PDF)</button>
+            <button type="button" class="header-btn header-btn-danger" onclick="resetForm(event)">🔄 清空重來</button>
+            <input type="file" id="importFileInput" style="display: none;" accept=".json,.labor,.txt" onchange="importData(event)">
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table>
+            <colgroup>
+                <col style="width: 3.5%;">  <!-- 基數 -->
+                <col style="width: 3.5%;">  <!-- age -->
+                <col style="width: 4.5%;">  <!-- 西元 -->
+                <col style="width: 4.5%;">  <!-- 民國 -->
+                <col style="width: 6.5%;">  <!-- 月提繳工資 -->
+                <col style="width: 5.5%;">  <!-- 個人自願提繳率 -->
+                <col style="width: 6.5%;">  <!-- 個人自願提繳金額 -->
+                <col style="width: 6.5%;">  <!-- 雇主提繳金額 -->
+                <col style="width: 7.0%;">  <!-- 雇主提繳金額累計 -->
+                <col style="width: 7.0%;">  <!-- 雇主提繳收益累計 -->
+                <col style="width: 5.5%;">  <!-- 公告收益 -->
+                <col style="width: 7.5%;">  <!-- 實際合計 -->
+                <col style="width: 6.0%;">  <!-- 工作單位 -->
+                <col style="width: 3.5%;">  <!-- 年資 -->
+                <col style="width: 6.5%;">  <!-- 預估雇主提繳金額累計 -->
+                <col style="width: 7.5%;">  <!-- 預估雇主提繳收益累計 -->
+                <col style="width: 6.5%;">  <!-- 預估合計 -->
+                <col style="width: 6.0%;">  <!-- 預估收益誤差調整 -->
+            </colgroup>
+            <thead>
+                <!-- Row 1: 表頭主分區 -->
+                <tr class="section-header">
+                    <td colspan="4" class="label-cell">勞工退休金個人專戶金額試算</td>
+                    <td colspan="2" class="label-cell">雇主提繳<br>金額累計</td>
+                    <td colspan="2" class="label-cell">雇主提繳<br>收益累計</td>
+                    <td colspan="2" class="label-cell">平均<br>公告收益</td>
+                    <td colspan="2" class="label-cell">預估當年度<br>損益試算日期</td>
+                    <td colspan="2" class="label-cell">預估當年度本金</td>
+                    <td class="calc-symbol">*</td>
+                    <td class="label-cell">預估當年度<br>累計損益率</td>
+                    <td class="calc-symbol">=</td>
+                    <td colspan="2" class="label-cell">預估損益/合計</td>
+                </tr>
+                
+                <!-- Row 3 & 4: 頂部資料區 -->
+                <tr>
+                    <td colspan="4" rowspan="2" class="empty-cell"></td>
+
+                    <td colspan="2" rowspan="2" class="val-text" id="topSumEmployerAmt">0</td>
+                    <td colspan="2" rowspan="2" class="val-text" id="topSumEmployerGain">0</td>
+                    <td colspan="2" rowspan="2" class="text-red" id="topAvgYield">0.0000%</td>
+                    
+                    <!-- 預估當年度損益試算日期 -->
+                    <td colspan="2" class="input-cell">
+                        <input type="text" id="topCalcDate" placeholder="YYYY/MM/DD" oninput="calculate()">
+                    </td>
+                    <!-- 預估當年度本金 (M3) -->
+                    <td colspan="2" class="input-cell">
+                        <input type="number" id="topPrincipalM3" placeholder="0" oninput="calculate()">
+                    </td>
+                    <td class="calc-symbol">*</td>
+                    <!-- 預估當年度累計損益率 (P3) -->
+                    <td class="input-cell">
+                        <input type="number" id="topGainP3" placeholder="0%" step="0.0001" oninput="calculate()">
+                    </td>
+                    <td class="calc-symbol">=</td>
+                    <!-- R3 = M3 * (P3 / 100) -->
+                    <td colspan="2" class="val-text" id="topR3Val">0</td>
+                </tr>
+
+                <!-- Row 4: 頂部第二列右半部 -->
+                <tr>
+                    <td colspan="2" class="empty-cell"></td>
+                    <!-- M4 = M3 -->
+                    <td colspan="2" class="val-text" id="topM4Val">0</td>
+                    <td class="calc-symbol">+</td>
+                    <!-- P4 = R3 -->
+                    <td class="val-text" id="topP4Val">0</td>
+                    <td class="calc-symbol">=</td>
+                    <!-- R4 = M4 + P4 -->
+                    <td colspan="2" class="highlight-yellow" id="topR4Val">0</td>
+                </tr>
+
+                <!-- Row 5: 明細欄位表頭 -->
+                <tr class="sub-header">
+                    <td>基數</td>
+                    <td>age</td>
+                    <td>西元</td>
+                    <td>民國</td>
+                    <td>月提繳<br>工資</td>
+                    <td>個人自願<br>提繳率</td>
+                    <td>個人自願<br>提繳金額</td>
+                    <td>雇主提繳<br>金額</td>
+                    <td>雇主提繳<br>金額累計</td>
+                    <td>雇主提繳<br>收益累計</td>
+                    <td>公告<br>收益</td>
+                    <td>實際<br>合計</td>
+                    <td>工作<br>單位</td>
+                    <td>年資</td>
+                    <td>預估雇主<br>提繳金額累計</td>
+                    <td>預估雇主<br>提繳收益累計</td>
+                    <td>預估<br>合計</td>
+                    <td>預估收益<br>誤差調整</td>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <div class="footer-action-area">
+        <div class="info-note">
+            勞工退休金個人專戶查詢與相關法規資訊，可查詢勞動部勞工保險局：<a href="https://www.bli.gov.tw/0012942.html" target="_blank" rel="noopener noreferrer">https://www.bli.gov.tw/0012942.html</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    const ROW_COUNT = 41;
+    const STORAGE_KEY = "labor_pension_calc_data_v1_5"; // LocalStorage 快取 Key
+
+    function initTableStructure() {
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = '';
+
+        for (let i = 0; i < ROW_COUNT; i++) {
+            const index = i + 1;
+            const row = document.createElement('tr');
+            row.setAttribute('id', `row-${i}`);
+
+            if (i === 0) {
+                row.innerHTML = `
+                    <td>${index}</td>
+                    <td class="input-cell"><input type="number" id="age-0" placeholder="例:27" oninput="calculate()"></td>
+                    <td class="input-cell"><input type="number" id="ad-0" placeholder="2026" oninput="calculate()"></td>
+                    <td class="input-cell"><input type="number" id="roc-0" placeholder="115" oninput="calculate()"></td>
+                    <td class="input-cell"><input type="number" id="wage-0" placeholder="0" oninput="calculate()"></td>
+                    <td class="input-cell"><input type="number" id="selfRate-0" placeholder="0%" step="0.01" oninput="calculate()"></td>
+                    <td class="val-text" id="selfAmt-0">0</td>
+                    <td class="input-cell"><input type="number" id="empAmt-0" placeholder="0" oninput="calculate()"></td>
+                    <td class="input-cell"><input type="number" id="empAmtCum-0" placeholder="0" oninput="calculate()"></td>
+                    <td class="input-cell"><input type="number" id="empGainCum-0" placeholder="0" oninput="calculate()"></td>
+                    <td class="input-cell"><input type="number" id="yield-0" placeholder="0%" step="0.0001" oninput="calculate()"></td>
+                    <td class="highlight-green" id="realTotal-0">0</td>
+                    <td class="input-cell"><input type="text" id="company-0" placeholder="" oninput="saveToLocalStorage()"></td>
+                    <td id="seniority-0">${index}</td>
+                    <td class="val-text" id="estEmpAmtCum-0">-</td>
+                    <td class="val-text" id="estEmpGainCum-0">-</td>
+                    <td class="val-text" id="estTotal-0">-</td>
+                    <td class="val-text" id="estAdj-0">-</td>
+                `;
+            } else {
+                row.innerHTML = `
+                    <td>${index}</td>
+                    <td class="val-text" id="age-${i}"></td>
+                    <td class="val-text" id="ad-${i}"></td>
+                    <td class="val-text" id="roc-${i}"></td>
+                    <td class="input-cell"><input type="number" id="wage-${i}" placeholder="" oninput="calculate()"></td>
+                    <td class="input-cell"><input type="number" id="selfRate-${i}" placeholder="" step="0.01" oninput="calculate()"></td>
+                    <td class="val-text" id="selfAmt-${i}">0</td>
+                    <td class="input-cell"><input type="number" id="empAmt-${i}" placeholder="" oninput="calculate()"></td>
+                    <td class="input-cell"><input type="number" id="empAmtCum-${i}" placeholder="" oninput="calculate()"></td>
+                    <td class="input-cell"><input type="number" id="empGainCum-${i}" placeholder="" oninput="calculate()"></td>
+                    <td class="input-cell"><input type="number" id="yield-${i}" placeholder="" step="0.0001" oninput="calculate()"></td>
+                    <td class="highlight-green" id="realTotal-${i}">0</td>
+                    <td class="input-cell"><input type="text" id="company-${i}" oninput="saveToLocalStorage()"></td>
+                    <td id="seniority-${i}">${index}</td>
+                    <td class="val-text" id="estEmpAmtCum-${i}">0</td>
+                    <td class="val-text" id="estEmpGainCum-${i}">0</td>
+                    <td class="val-text" id="estTotal-${i}">0</td>
+                    <td class="val-text" id="estAdj-${i}">0</td>
+                `;
+            }
+            tableBody.appendChild(row);
+        }
+    }
+
+    /* LocalStorage 寫入與讀取機制 */
+    function saveToLocalStorage() {
+        const formData = {
+            calcDate: document.getElementById('topCalcDate').value,
+            principalM3: document.getElementById('topPrincipalM3').value,
+            gainP3: document.getElementById('topGainP3').value,
+            rows: []
+        };
+
+        for (let i = 0; i < ROW_COUNT; i++) {
+            formData.rows.push({
+                age: (i === 0) ? document.getElementById(`age-0`).value : document.getElementById(`age-${i}`).innerText,
+                ad: (i === 0) ? document.getElementById(`ad-0`).value : document.getElementById(`ad-${i}`).innerText,
+                roc: (i === 0) ? document.getElementById(`roc-0`).value : document.getElementById(`roc-${i}`).innerText,
+                wage: document.getElementById(`wage-${i}`).value,
+                selfRate: document.getElementById(`selfRate-${i}`).value,
+                empAmt: document.getElementById(`empAmt-${i}`).value,
+                empAmtCum: document.getElementById(`empAmtCum-${i}`).value,
+                empGainCum: document.getElementById(`empGainCum-${i}`).value,
+                yield: document.getElementById(`yield-${i}`).value,
+                company: document.getElementById(`company-${i}`).value
+            });
+        }
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+    }
+
+    function loadFromLocalStorage() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) return false;
+        try {
+            const data = JSON.parse(saved);
+            if (data.rows && Array.isArray(data.rows)) {
+                if (data.calcDate !== undefined) document.getElementById('topCalcDate').value = data.calcDate;
+                if (data.principalM3 !== undefined) document.getElementById('topPrincipalM3').value = data.principalM3;
+                if (data.gainP3 !== undefined) document.getElementById('topGainP3').value = data.gainP3;
+
+                data.rows.forEach((row, i) => {
+                    if (i < ROW_COUNT) fillRowData(row, i);
+                });
+                return true;
+            }
+        } catch (e) {
+            console.error("讀取 LocalStorage 快取失敗", e);
+        }
+        return false;
+    }
+
+    function formatNumber(num) {
+        if (isNaN(num)) return "0";
+        return Math.round(num).toLocaleString('zh-TW');
+    }
+
+    function calculate() {
+        // 1. 計算頂部平均公告收益
+        let yieldSum = 0;
+        let yieldCount = 0;
+
+        for (let i = 0; i < ROW_COUNT; i++) {
+            const yVal = document.getElementById(`yield-${i}`).value;
+            if (yVal !== "" && !isNaN(parseFloat(yVal))) {
+                yieldSum += parseFloat(yVal) / 100;
+                yieldCount++;
+            }
+        }
+
+        const avgYield = yieldCount > 0 ? (yieldSum / yieldCount) : 0;
+        document.getElementById('topAvgYield').innerText = (avgYield * 100).toFixed(4) + "%";
+
+        // 2. 年齡/西元/民國 連動邏輯
+        const baseAge = parseInt(document.getElementById('age-0').value);
+        const baseAD = parseInt(document.getElementById('ad-0').value);
+        const baseROC = parseInt(document.getElementById('roc-0').value);
+
+        for (let i = 1; i < ROW_COUNT; i++) {
+            document.getElementById(`age-${i}`).innerText = !isNaN(baseAge) ? (baseAge + i) : '';
+            document.getElementById(`ad-${i}`).innerText = !isNaN(baseAD) ? (baseAD + i) : '';
+            document.getElementById(`roc-${i}`).innerText = !isNaN(baseROC) ? (baseROC + i) : '';
+        }
+
+        // 3. 逐列計算明細表格
+        let totalEmpAmtSum = 0;
+        let totalEmpGainSum = 0;
+        let prevEstTotal = 0;
+
+        for (let i = 0; i < ROW_COUNT; i++) {
+            const wage = parseFloat(document.getElementById(`wage-${i}`).value) || 0;
+            const selfRate = (parseFloat(document.getElementById(`selfRate-${i}`).value) || 0) / 100;
+            const empAmt = parseFloat(document.getElementById(`empAmt-${i}`).value) || 0;
+            const empAmtCum = parseFloat(document.getElementById(`empAmtCum-${i}`).value) || 0;
+            const empGainCum = parseFloat(document.getElementById(`empGainCum-${i}`).value) || 0;
+
+            const selfAmt = Math.round(wage * selfRate * 12);
+            document.getElementById(`selfAmt-${i}`).innerText = formatNumber(selfAmt);
+
+            const realTotal = empAmtCum + empGainCum + selfAmt;
+            document.getElementById(`realTotal-${i}`).innerText = formatNumber(realTotal);
+
+            totalEmpAmtSum += (empAmt * 12);
+            totalEmpGainSum += empGainCum;
+
+            if (i === 0) {
+                prevEstTotal = realTotal;
+            } else {
+                const estEmpAmtCum = prevEstTotal + (empAmt * 12) + selfAmt;
+                const estEmpGainCum = estEmpAmtCum * avgYield;
+                const estAdj = estEmpGainCum - empGainCum;
+                const rawTotal = estEmpAmtCum + estEmpGainCum;
+                const estTotal = ((rawTotal - estAdj) === prevEstTotal) ? rawTotal : (rawTotal - estAdj);
+
+                document.getElementById(`estEmpAmtCum-${i}`).innerText = formatNumber(estEmpAmtCum);
+                document.getElementById(`estEmpGainCum-${i}`).innerText = formatNumber(estEmpGainCum);
+                document.getElementById(`estTotal-${i}`).innerText = formatNumber(estTotal);
+                document.getElementById(`estAdj-${i}`).innerText = formatNumber(estAdj);
+
+                prevEstTotal = estTotal;
+            }
+        }
+
+        // 4. 左上方加總更新
+        document.getElementById('topSumEmployerAmt').innerText = formatNumber(totalEmpAmtSum);
+        document.getElementById('topSumEmployerGain').innerText = formatNumber(totalEmpGainSum);
+
+        // 5. 右上方核心公式計算
+        const M3 = parseFloat(document.getElementById('topPrincipalM3').value) || 0;
+        const P3_rate = (parseFloat(document.getElementById('topGainP3').value) || 0) / 100;
+
+        const R3 = M3 * P3_rate;
+        document.getElementById('topR3Val').innerText = formatNumber(R3);
+
+        const M4 = M3;
+        document.getElementById('topM4Val').innerText = formatNumber(M4);
+
+        const P4 = R3;
+        document.getElementById('topP4Val').innerText = formatNumber(P4);
+
+        const R4 = M4 + P4;
+        document.getElementById('topR4Val').innerText = formatNumber(R4);
+
+        // 6. 每次試算完畢後自動寫入 LocalStorage
+        saveToLocalStorage();
+    }
+
+    function resetForm(event) {
+        if (event && event.preventDefault) event.preventDefault();
+        if (confirm("確定要清空所有試算與輸入紀錄嗎？此操作無法復原。")) {
+            localStorage.removeItem(STORAGE_KEY); // 清除 LocalStorage 快取
+            const inputs = document.querySelectorAll('input');
+            inputs.forEach(input => {
+                if (input.type !== 'file') input.value = '';
+            });
+            calculate();
+            alert("已成功清空表單與快取紀錄。");
+        }
+    }
+
+    function exportData() {
+        const formData = {
+            calcDate: document.getElementById('topCalcDate').value,
+            principalM3: document.getElementById('topPrincipalM3').value,
+            gainP3: document.getElementById('topGainP3').value,
+            rows: []
+        };
+
+        for (let i = 0; i < ROW_COUNT; i++) {
+            formData.rows.push({
+                age: (i === 0) ? document.getElementById(`age-0`).value : document.getElementById(`age-${i}`).innerText,
+                ad: (i === 0) ? document.getElementById(`ad-0`).value : document.getElementById(`ad-${i}`).innerText,
+                roc: (i === 0) ? document.getElementById(`roc-0`).value : document.getElementById(`roc-${i}`).innerText,
+                wage: document.getElementById(`wage-${i}`).value,
+                selfRate: document.getElementById(`selfRate-${i}`).value,
+                empAmt: document.getElementById(`empAmt-${i}`).value,
+                empAmtCum: document.getElementById(`empAmtCum-${i}`).value,
+                empGainCum: document.getElementById(`empGainCum-${i}`).value,
+                yield: document.getElementById(`yield-${i}`).value,
+                company: document.getElementById(`company-${i}`).value
+            });
+        }
+
+        const jsonStr = JSON.stringify(formData, null, 2);
+        const blob = new Blob([jsonStr], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `勞退個人專戶試算備份_${dateStr}.labor`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blob);
+    }
+
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                
+                if (data.rows && Array.isArray(data.rows)) {
+                    if (data.calcDate !== undefined) document.getElementById('topCalcDate').value = data.calcDate;
+                    if (data.principalM3 !== undefined) document.getElementById('topPrincipalM3').value = data.principalM3;
+                    if (data.gainP3 !== undefined) document.getElementById('topGainP3').value = data.gainP3;
+
+                    data.rows.forEach((row, i) => {
+                        if (i < ROW_COUNT) fillRowData(row, i);
+                    });
+                } else if (Array.isArray(data)) {
+                    data.forEach((row, i) => {
+                        if (i < ROW_COUNT) fillRowData(row, i);
+                    });
+                }
+                
+                calculate();
+                saveToLocalStorage(); // 匯入成功後更新 LocalStorage 快取
+                alert('勞退試算資料成功匯入！已自動寫入自動儲存紀錄。');
+            } catch (err) {
+                alert('匯入檔案格式不正確！');
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+
+    function fillRowData(row, i) {
+        if (i === 0) {
+            if (row.age !== undefined) document.getElementById(`age-0`).value = row.age;
+            if (row.ad !== undefined) document.getElementById(`ad-0`).value = row.ad;
+            if (row.roc !== undefined) document.getElementById(`roc-0`).value = row.roc;
+        }
+        if (row.wage !== undefined) document.getElementById(`wage-${i}`).value = row.wage;
+        if (row.selfRate !== undefined) document.getElementById(`selfRate-${i}`).value = row.selfRate;
+        if (row.empAmt !== undefined) document.getElementById(`empAmt-${i}`).value = row.empAmt;
+        if (row.empAmtCum !== undefined) document.getElementById(`empAmtCum-${i}`).value = row.empAmtCum;
+        if (row.empGainCum !== undefined) document.getElementById(`empGainCum-${i}`).value = row.empGainCum;
+        if (row.yield !== undefined) document.getElementById(`yield-${i}`).value = row.yield;
+        if (row.company !== undefined) document.getElementById(`company-${i}`).value = row.company;
+    }
+
+    window.onload = function() {
+        initTableStructure();
+        loadFromLocalStorage(); // 初始化時先載入快取資料
+        calculate();
+    };
+</script>
+
+</body>
+</html>
