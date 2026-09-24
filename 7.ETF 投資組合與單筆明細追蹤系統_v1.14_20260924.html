@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETF 投資組合與單筆明細追蹤系統</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        /* 淡藍色輸入格樣式 */
+        .input-blue {
+            background-color: #e0f2fe !important;
+            border: 1px solid #bae6fd !important;
+            color: #0369a1 !important;
+            font-weight: 600;
+        }
+        .input-blue:focus {
+            background-color: #ffffff !important;
+            border-color: #0284c7 !important;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+        }
+        /* 表格固定表頭與捲軸優化 */
+        .sticky-thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        /* 列印優化 */
+        @media print {
+            .no-print { display: none !important; }
+            body { background-color: #fff; }
+            .print-shadow-none { box-shadow: none !important; }
+            .max-h-scroll { max-height: none !important; overflow: visible !important; }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 text-slate-800">
+
+    <div class="max-w-[96rem] mx-auto space-y-6">
+
+        <!-- 頂部 Header 與 功能按鈕列 -->
+        <header class="bg-[#1F3A60] text-white rounded-t-xl p-6 shadow-lg print-shadow-none">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold tracking-wide flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-blue-400"></i>
+                        ETF 投資組合與單筆明細追蹤系統
+                    </h1>
+                    <p class="text-slate-300 text-sm mt-1">核心理念：精準追蹤單標的 XIRR、長期維護成本、交易稅費與完整配息組成分析</p>
+                </div>
+
+                <!-- 右上角功能按鈕區 -->
+                <div class="flex flex-wrap items-center gap-2 no-print">
+                    <button onclick="exportData()" class="bg-slate-700/80 hover:bg-slate-700 text-white text-xs font-semibold py-2 px-3 rounded border border-slate-500/50 flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-floppy-disk text-purple-300"></i> 匯出 .ETF 備份檔
+                    </button>
+                    <label class="bg-slate-700/80 hover:bg-slate-700 text-white text-xs font-semibold py-2 px-3 rounded border border-slate-500/50 flex items-center gap-1.5 cursor-pointer transition">
+                        <i class="fa-solid fa-folder-open text-amber-300"></i> 匯入 .ETF 備份檔
+                        <input type="file" id="importFile" accept=".json,.etf" class="hidden" onchange="importData(event)">
+                    </label>
+                    <button onclick="window.print()" class="bg-slate-700/80 hover:bg-slate-700 text-white text-xs font-semibold py-2 px-3 rounded border border-slate-500/50 flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-print text-blue-300"></i> 列印評估報告 (PDF)
+                    </button>
+                    <button onclick="resetData()" class="bg-rose-900/80 hover:bg-rose-800 text-white text-xs font-semibold py-2 px-3 rounded border border-rose-700/50 flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-rotate-right text-rose-300"></i> 清空重來
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- 主體內容區塊 -->
+        <main class="bg-white border border-slate-200 rounded-b-xl p-6 shadow-sm space-y-8 -mt-6">
+
+            <!-- 標的選擇、管理與費用設定區 -->
+            <section class="bg-slate-50 p-5 rounded-lg border border-slate-200">
+                <div class="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-1">選擇檢視標的 (ETF)</label>
+                        <select id="selectedSymbol" onchange="renderAll()" class="w-full bg-white border border-slate-300 rounded px-3 py-2 text-slate-800 font-bold focus:outline-none focus:border-blue-500">
+                            <!-- 動態渲染 -->
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">標的管理</label>
+                        <div class="flex gap-1.5">
+                            <input type="text" id="newSymbolInput" placeholder="例如: 00919" class="w-full input-blue text-sm rounded px-2.5 py-1.5">
+                            <button onclick="addNewSymbol()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-2.5 py-1.5 rounded whitespace-nowrap">新增</button>
+                            <button onclick="deleteCurrentSymbol()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-2.5 py-1.5 rounded whitespace-nowrap" title="刪除當前選定的標的">刪除</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">標的 Beta 值</label>
+                        <input type="number" step="0.01" id="symbolBeta" onchange="updateSymbolFees()" value="1.00" class="w-full input-blue text-sm rounded px-3 py-1.5">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">年化經理費率 (%)</label>
+                        <input type="number" step="0.001" id="mgmtFeeRate" onchange="updateSymbolFees()" value="0" class="w-full input-blue text-sm rounded px-3 py-1.5">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">年化保管費率 (%)</label>
+                        <input type="number" step="0.001" id="custodyFeeRate" onchange="updateSymbolFees()" value="0" class="w-full input-blue text-sm rounded px-3 py-1.5">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">其他費用 (%)</label>
+                        <input type="number" step="0.001" id="otherFeeRate" onchange="updateSymbolFees()" value="0" class="w-full input-blue text-sm rounded px-3 py-1.5">
+                    </div>
+                </div>
+            </section>
+
+            <!-- 數據統計看板 (KPI Cards) -->
+            <section>
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-lg font-bold text-[#1F3A60] flex items-center gap-2">
+                        <i class="fa-solid fa-chart-pie"></i> <span id="currentSymbolTitle">--</span> 單筆標的綜合績效看板
+                    </h2>
+                    <span class="text-xs text-slate-500">（已開啟 LocalStorage 自動即時儲存）</span>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <div class="text-xs font-semibold text-slate-500">付出總成本</div>
+                        <div id="kpiCost" class="text-base md:text-lg font-bold text-slate-800 mt-1">$0</div>
+                    </div>
+
+                    <div class="bg-blue-50/70 p-3 rounded-lg border border-blue-200/80">
+                        <div class="text-xs font-semibold text-blue-700">總現值</div>
+                        <div id="kpiValue" class="text-base md:text-lg font-bold text-blue-900 mt-1">$0</div>
+                    </div>
+
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <div class="text-xs font-semibold text-slate-500">累計實領配息</div>
+                        <div id="kpiDividends" class="text-base md:text-lg font-bold text-emerald-600 mt-1">$0</div>
+                    </div>
+
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <div class="text-xs font-semibold text-slate-500">累計總損益</div>
+                        <div id="kpiGain" class="text-base md:text-lg font-bold mt-1">$0</div>
+                    </div>
+
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <div class="text-xs font-semibold text-slate-500">含息總報酬率</div>
+                        <div id="kpiRoi" class="text-base md:text-lg font-bold mt-1">0.00%</div>
+                    </div>
+
+                    <div class="bg-amber-50/70 p-3 rounded-lg border border-amber-200/80">
+                        <div class="text-xs font-semibold text-amber-700">單筆年化 XIRR</div>
+                        <div id="kpiXirr" class="text-base md:text-lg font-bold text-amber-800 mt-1">0.00%</div>
+                    </div>
+
+                    <div class="bg-rose-50/70 p-3 rounded-lg border border-rose-200/80">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold text-rose-700">預估內扣費用</span>
+                            <select id="feeYears" onchange="renderAll()" class="text-xs bg-white border border-rose-300 rounded px-1 py-0.5 text-rose-800 font-bold focus:outline-none">
+                                <option value="1">1年</option>
+                                <option value="3">3年</option>
+                                <option value="5">5年</option>
+                                <option value="10">10年</option>
+                                <option value="20">20年</option>
+                                <option value="30">30年</option>
+                            </select>
+                        </div>
+                        <div id="kpiInternalFee" class="text-base md:text-lg font-bold text-rose-800 mt-1">$0</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 交易紀錄明細 -->
+            <section class="space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check"></i> 交易明細紀錄（買入 / 賣出）
+                    </h3>
+                    <button onclick="addTradeRow()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-1.5 px-3 rounded flex items-center gap-1 no-print">
+                        <i class="fa-solid fa-plus"></i> 新增交易
+                    </button>
+                </div>
+                <div class="overflow-x-auto max-h-[520px] overflow-y-auto max-h-scroll border border-slate-200 rounded">
+                    <table class="w-full text-xs text-left border-collapse">
+                        <thead class="bg-[#1F3A60] text-white sticky-thead">
+                            <tr>
+                                <th class="p-2 border border-slate-300 min-w-[120px]">日期</th>
+                                <th class="p-2 border border-slate-300 min-w-[80px]">類別</th>
+                                <th class="p-2 border border-slate-300 min-w-[100px]">成交單價</th>
+                                <th class="p-2 border border-slate-300 min-w-[100px]">股數</th>
+                                <th class="p-2 border border-slate-300 min-w-[90px]">手續費</th>
+                                <th class="p-2 border border-slate-300 bg-blue-900/60 min-w-[90px]">交易稅</th>
+                                <th class="p-2 border border-slate-300 min-w-[120px]">小計 (現金流出/流入)</th>
+                                <th class="p-2 border border-slate-300 text-center min-w-[60px] no-print">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tradesTbody">
+                            <!-- 動態渲染 -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- 配息收益紀錄 -->
+            <section class="space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                        <i class="fa-solid fa-hand-holding-dollar"></i> 配息收益紀錄
+                    </h3>
+                    <button onclick="addDividendRow()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-1.5 px-3 rounded flex items-center gap-1 no-print">
+                        <i class="fa-solid fa-plus"></i> 新增配息
+                    </button>
+                </div>
+                <div class="overflow-x-auto max-h-[420px] overflow-y-auto max-h-scroll border border-slate-200 rounded">
+                    <table class="w-full text-xs text-left border-collapse min-w-[1250px]">
+                        <thead class="bg-[#1F3A60] text-white sticky-thead">
+                            <tr>
+                                <th class="p-2 border border-slate-300 whitespace-nowrap">除息日期</th>
+                                <th class="p-2 border border-slate-300 whitespace-nowrap">發放日期</th>
+                                <th class="p-2 border border-slate-300 whitespace-nowrap">每股配息(元)</th>
+                                <th class="p-2 border border-slate-300 whitespace-nowrap">持有股數</th>
+                                <th class="p-2 border border-slate-300 bg-sky-900/60 whitespace-nowrap">郵匯費 <span class="text-[10px] opacity-75">(扣費)</span></th>
+                                <th class="p-2 border border-slate-300 bg-sky-900/60 whitespace-nowrap">二代健保 <span class="text-[10px] opacity-75">(扣費)</span></th>
+                                <th class="p-2 border border-slate-300 bg-sky-900/60 whitespace-nowrap">54C <span class="text-[10px] opacity-75">(組成)</span></th>
+                                <th class="p-2 border border-slate-300 bg-sky-900/60 whitespace-nowrap">76財產 <span class="text-[10px] opacity-75">(組成)</span></th>
+                                <th class="p-2 border border-slate-300 bg-sky-900/60 whitespace-nowrap">收益平準金 <span class="text-[10px] opacity-75">(組成)</span></th>
+                                <th class="p-2 border border-slate-300 bg-sky-900/60 whitespace-nowrap">其他所得 <span class="text-[10px] opacity-75">(組成)</span></th>
+                                <th class="p-2 border border-slate-300 bg-slate-800 whitespace-nowrap">未扣費配息總額 (公式)</th>
+                                <th class="p-2 border border-slate-300 whitespace-nowrap">實領配息總額</th>
+                                <th class="p-2 border border-slate-300 text-center whitespace-nowrap no-print">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dividendsTbody">
+                            <!-- 動態渲染 -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- 配息扣費與組成年度統計彙總表 -->
+            <section class="space-y-3 pt-2">
+                <div class="flex items-center gap-2">
+                    <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-check text-blue-600"></i> 配息扣費與組成年度統計彙總表
+                    </h3>
+                    <span class="text-xs text-slate-500">（依據配息發放日期/除息日期自動年度統計）</span>
+                </div>
+                <div class="overflow-x-auto max-h-[220px] overflow-y-auto max-h-scroll border border-slate-200 rounded">
+                    <table class="w-full text-xs text-left border-collapse min-w-[1000px]">
+                        <thead class="bg-slate-700 text-white sticky-thead">
+                            <tr>
+                                <th class="p-2 border border-slate-400 font-bold w-24">統計年度</th>
+                                <th class="p-2 border border-slate-400 bg-sky-900/40">郵匯費 <span class="text-[10px] opacity-75">(扣費)</span></th>
+                                <th class="p-2 border border-slate-400 bg-sky-900/40">二代健保 <span class="text-[10px] opacity-75">(扣費)</span></th>
+                                <th class="p-2 border border-slate-400 bg-sky-900/40">54C <span class="text-[10px] opacity-75">(組成)</span></th>
+                                <th class="p-2 border border-slate-400 bg-sky-900/40">76財產 <span class="text-[10px] opacity-75">(組成)</span></th>
+                                <th class="p-2 border border-slate-400 bg-sky-900/40">收益平準金 <span class="text-[10px] opacity-75">(組成)</span></th>
+                                <th class="p-2 border border-slate-400 bg-sky-900/40">其他所得 <span class="text-[10px] opacity-75">(組成)</span></th>
+                                <th class="p-2 border border-slate-400 bg-slate-800 font-bold">年度未扣費配息總額</th>
+                                <th class="p-2 border border-slate-400 font-bold">年度實領總額</th>
+                            </tr>
+                        </thead>
+                        <tbody id="yearlySummaryTbody">
+                            <!-- 動態渲染 -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- 現價估值設定區 -->
+            <section class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex flex-wrap items-center gap-4">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-bold text-slate-700">當前標的最新市場價格估算：</span>
+                            <input type="number" step="0.01" id="currentMarketPrice" onchange="updateMarketPrice()" value="0" class="input-blue text-sm rounded px-3 py-1.5 w-32">
+                        </div>
+                        
+                        <div class="flex items-center gap-2 border-l border-slate-300 pl-4">
+                            <span class="text-sm font-bold text-slate-700"><i class="fa-solid fa-wallet text-emerald-600 mr-1"></i>可用現金：</span>
+                            <input type="number" step="1" id="availableCash" onchange="updateAvailableCash()" value="0" class="input-blue text-sm rounded px-3 py-1.5 w-36" placeholder="例如: 100000">
+                            <span class="text-xs text-slate-500">元</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 全組合「資產配置與 XIRR 明細」與雙圖表呈現場域 -->
+            <section class="bg-white rounded-lg border border-slate-200 p-5 space-y-6">
+                <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                    <h2 class="text-lg font-bold text-[#1F3A60] flex items-center gap-2">
+                        <i class="fa-solid fa-chart-column text-blue-500"></i> 各標的資產配置與 XIRR 明細
+                    </h2>
+                </div>
+
+                <!-- 跨標的資產明細表格 (已將右邊所有數據欄位均勻分配寬度) -->
+                <div class="overflow-x-auto border border-slate-200 rounded">
+                    <table class="w-full text-xs text-left border-collapse table-fixed">
+                        <thead class="bg-slate-100 text-slate-700">
+                            <tr>
+                                <th class="p-2.5 border border-slate-200 font-bold min-w-[120px]">標的名稱</th>
+                                <th class="p-2.5 border border-slate-200 font-bold text-right w-[12.5%]">資產占比</th>
+                                <th class="p-2.5 border border-slate-200 font-bold text-right w-[12.5%]">Beta 值</th>
+                                <th class="p-2.5 border border-slate-200 font-bold text-right w-[12.5%]">加權 Beta 貢獻</th>
+                                <th class="p-2.5 border border-slate-200 font-bold text-right w-[12.5%]">累積投入成本</th>
+                                <th class="p-2.5 border border-slate-200 font-bold text-right w-[12.5%]">當前市值</th>
+                                <th class="p-2.5 border border-slate-200 font-bold text-right w-[12.5%]">未實現損益</th>
+                                <th class="p-2.5 border border-slate-200 font-bold text-right w-[12.5%]">XIRR (年化報酬率)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="portfolioSummaryTbody">
+                            <!-- 動態渲染 -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 雙圖表展示區 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+                    
+                    <!-- 左圖：資產配置比例 (%) 中空圓餅圖 -->
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 flex flex-col items-center">
+                        <h3 class="text-sm font-bold text-slate-700 mb-3 text-center">資產配置比例 (%)</h3>
+                        <div class="relative w-full max-w-[320px] h-[280px]">
+                            <canvas id="assetAllocationChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- 右圖：個別標的 XIRR 年化報酬率 (%) 長條圖 -->
+                    <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 flex flex-col items-center">
+                        <h3 class="text-sm font-bold text-slate-700 mb-3 text-center">個別標的 XIRR 年化報酬率 (%)</h3>
+                        <div class="w-full max-w-[380px] h-[280px]">
+                            <canvas id="xirrBarChart"></canvas>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- JavaScript 腳本區塊 -->
+    <script>
+        // 全局 Chart.js 實例引用
+        let doughnutChartInstance = null;
+        let barChartInstance = null;
+
+        // 初始化資料結構
+        let portfolioData = JSON.parse(localStorage.getItem('ETF_PORTFOLIO_DATA')) || {
+            availableCash: 0,
+            symbols: {},
+            activeSymbol: ""
+        };
+
+        // 頁面載入自動初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            renderSymbolSelect();
+            renderAll();
+        });
+
+        // LocalStorage 自動儲存
+        function saveData() {
+            localStorage.setItem('ETF_PORTFOLIO_DATA', JSON.stringify(portfolioData));
+        }
+
+        // 渲染標的選單
+        function renderSymbolSelect() {
+            const select = document.getElementById('selectedSymbol');
+            select.innerHTML = '';
+            
+            const symbolList = Object.keys(portfolioData.symbols);
+
+            if (symbolList.length === 0) {
+                const opt = document.createElement('option');
+                opt.value = "";
+                opt.textContent = "-- 請在右側新增標的 --";
+                select.appendChild(opt);
+                portfolioData.activeSymbol = "";
+                return;
+            }
+
+            if (!portfolioData.activeSymbol || !portfolioData.symbols[portfolioData.activeSymbol]) {
+                portfolioData.activeSymbol = symbolList[0];
+            }
+
+            symbolList.forEach(symbol => {
+                const opt = document.createElement('option');
+                opt.value = symbol;
+                opt.textContent = symbol;
+                if (symbol === portfolioData.activeSymbol) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+
+        // 新增標的
+        function addNewSymbol() {
+            const input = document.getElementById('newSymbolInput');
+            const symbol = input.value.trim();
+            if (!symbol) return;
+            if (!portfolioData.symbols[symbol]) {
+                portfolioData.symbols[symbol] = {
+                    beta: 1.0, mgmtFee: 0, custodyFee: 0, otherFee: 0, currentPrice: 0,
+                    trades: [], dividends: []
+                };
+            }
+            portfolioData.activeSymbol = symbol;
+            input.value = '';
+            saveData();
+            renderSymbolSelect();
+            renderAll();
+        }
+
+        // 刪除當前標的
+        function deleteCurrentSymbol() {
+            const activeSymbol = portfolioData.activeSymbol;
+            if (!activeSymbol || !portfolioData.symbols[activeSymbol]) {
+                alert('目前沒有可刪除的標的！');
+                return;
+            }
+
+            const confirmDelete = confirm(`⚠️ 確定要刪除標的 [ ${activeSymbol} ] 嗎？\n這將完全刪除該標的所有交易與配息紀錄！`);
+            if (!confirmDelete) return;
+
+            delete portfolioData.symbols[activeSymbol];
+            const remainingSymbols = Object.keys(portfolioData.symbols);
+            portfolioData.activeSymbol = remainingSymbols.length > 0 ? remainingSymbols[0] : "";
+            
+            saveData();
+            renderSymbolSelect();
+            renderAll();
+        }
+
+        // 渲染全部內容
+        function renderAll() {
+            const select = document.getElementById('selectedSymbol');
+            if (select.value) {
+                portfolioData.activeSymbol = select.value;
+            }
+            const activeSymbol = portfolioData.activeSymbol;
+            
+            if (!activeSymbol || !portfolioData.symbols[activeSymbol]) {
+                document.getElementById('currentSymbolTitle').textContent = "無標的";
+                document.getElementById('symbolBeta').value = 1.0;
+                document.getElementById('mgmtFeeRate').value = 0;
+                document.getElementById('custodyFeeRate').value = 0;
+                document.getElementById('otherFeeRate').value = 0;
+                document.getElementById('currentMarketPrice').value = 0;
+                document.getElementById('availableCash').value = portfolioData.availableCash ?? 0;
+
+                renderTrades([]);
+                renderDividends([]);
+                renderYearlySummary([]);
+                resetKPIs();
+                renderPortfolioSummaryAndCharts();
+                return;
+            }
+
+            const currentData = portfolioData.symbols[activeSymbol];
+
+            document.getElementById('currentSymbolTitle').textContent = activeSymbol;
+            document.getElementById('symbolBeta').value = currentData.beta ?? 1.0;
+            document.getElementById('mgmtFeeRate').value = currentData.mgmtFee ?? 0;
+            document.getElementById('custodyFeeRate').value = currentData.custodyFee ?? 0;
+            document.getElementById('otherFeeRate').value = currentData.otherFee ?? 0;
+            document.getElementById('currentMarketPrice').value = currentData.currentPrice ?? 0;
+            document.getElementById('availableCash').value = portfolioData.availableCash ?? 0;
+
+            renderTrades(currentData.trades);
+            renderDividends(currentData.dividends);
+            renderYearlySummary(currentData.dividends);
+            calculateMetrics(currentData);
+            
+            renderPortfolioSummaryAndCharts();
+            saveData();
+        }
+
+        function resetKPIs() {
+            document.getElementById('kpiCost').textContent = '$0';
+            document.getElementById('kpiValue').textContent = '$0';
+            document.getElementById('kpiDividends').textContent = '$0';
+            document.getElementById('kpiGain').textContent = '$0';
+            document.getElementById('kpiRoi').textContent = '0.00%';
+            document.getElementById('kpiXirr').textContent = '0.00%';
+            document.getElementById('kpiInternalFee').textContent = '$0';
+        }
+
+        function updateSymbolFees() {
+            const activeSymbol = portfolioData.activeSymbol;
+            if (!activeSymbol) return;
+            portfolioData.symbols[activeSymbol].beta = parseFloat(document.getElementById('symbolBeta').value) || 0;
+            portfolioData.symbols[activeSymbol].mgmtFee = parseFloat(document.getElementById('mgmtFeeRate').value) || 0;
+            portfolioData.symbols[activeSymbol].custodyFee = parseFloat(document.getElementById('custodyFeeRate').value) || 0;
+            portfolioData.symbols[activeSymbol].otherFee = parseFloat(document.getElementById('otherFeeRate').value) || 0;
+            saveData();
+            calculateMetrics(portfolioData.symbols[activeSymbol]);
+            renderPortfolioSummaryAndCharts();
+        }
+
+        function updateMarketPrice() {
+            const activeSymbol = portfolioData.activeSymbol;
+            if (!activeSymbol) return;
+            portfolioData.symbols[activeSymbol].currentPrice = parseFloat(document.getElementById('currentMarketPrice').value) || 0;
+            saveData();
+            calculateMetrics(portfolioData.symbols[activeSymbol]);
+            renderPortfolioSummaryAndCharts();
+        }
+
+        function updateAvailableCash() {
+            portfolioData.availableCash = parseFloat(document.getElementById('availableCash').value) || 0;
+            saveData();
+        }
+
+        // 渲染交易紀錄
+        function renderTrades(trades) {
+            const tbody = document.getElementById('tradesTbody');
+            tbody.innerHTML = '';
+            if (trades.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-3 text-center text-slate-400">尚無交易紀錄，請點擊右上方「新增交易」</td></tr>`;
+                return;
+            }
+            trades.forEach((trade, index) => {
+                const totalCost = trade.type === 'BUY' 
+                    ? (trade.price * trade.shares + trade.fee + trade.tax) 
+                    : (trade.price * trade.shares - trade.fee - trade.tax);
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 border-b border-slate-200";
+                tr.innerHTML = `
+                    <td class="p-1.5 border"><input type="date" value="${trade.date}" onchange="updateTrade(${index}, 'date', this.value)" class="w-full bg-transparent"></td>
+                    <td class="p-1.5 border">
+                        <select onchange="updateTrade(${index}, 'type', this.value)" class="bg-transparent font-semibold ${trade.type==='BUY'?'text-rose-600':'text-emerald-600'}">
+                            <option value="BUY" ${trade.type==='BUY'?'selected':''}>買入</option>
+                            <option value="SELL" ${trade.type==='SELL'?'selected':''}>賣出</option>
+                        </select>
+                    </td>
+                    <td class="p-1.5 border"><input type="number" step="0.01" value="${trade.price}" onchange="updateTrade(${index}, 'price', this.value)" class="w-full input-blue px-2 py-0.5 rounded"></td>
+                    <td class="p-1.5 border"><input type="number" value="${trade.shares}" onchange="updateTrade(${index}, 'shares', this.value)" class="w-full input-blue px-2 py-0.5 rounded"></td>
+                    <td class="p-1.5 border"><input type="number" value="${trade.fee}" onchange="updateTrade(${index}, 'fee', this.value)" class="w-full input-blue px-2 py-0.5 rounded"></td>
+                    <td class="p-1.5 border"><input type="number" value="${trade.tax}" onchange="updateTrade(${index}, 'tax', this.value)" class="w-full input-blue px-2 py-0.5 rounded"></td>
+                    <td class="p-1.5 border font-semibold text-slate-700">$${Math.round(totalCost).toLocaleString()}</td>
+                    <td class="p-1.5 border text-center no-print">
+                        <button onclick="deleteTrade(${index})" class="text-rose-500 hover:text-rose-700"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function addTradeRow() {
+            const activeSymbol = portfolioData.activeSymbol;
+            if (!activeSymbol) {
+                alert('請先在左上方新增或選擇一個標的！');
+                return;
+            }
+            portfolioData.symbols[activeSymbol].trades.push({
+                id: Date.now(),
+                date: new Date().toISOString().split('T')[0],
+                type: 'BUY', price: 0, shares: 0, fee: 0, tax: 0
+            });
+            renderAll();
+        }
+
+        function updateTrade(index, field, value) {
+            const activeSymbol = portfolioData.activeSymbol;
+            const trade = portfolioData.symbols[activeSymbol].trades[index];
+            trade[field] = (field === 'date' || field === 'type') ? value : parseFloat(value) || 0;
+            renderAll();
+        }
+
+        function deleteTrade(index) {
+            const activeSymbol = portfolioData.activeSymbol;
+            portfolioData.symbols[activeSymbol].trades.splice(index, 1);
+            renderAll();
+        }
+
+        // 渲染配息紀錄
+        function renderDividends(dividends) {
+            const tbody = document.getElementById('dividendsTbody');
+            tbody.innerHTML = '';
+            if (dividends.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="13" class="p-3 text-center text-slate-400">尚無配息紀錄，請點擊右上方「新增配息」</td></tr>`;
+                return;
+            }
+            dividends.forEach((div, index) => {
+                const grossTotal = (div.amountPerShare || 0) * (div.shares || 0);
+                const netTotal = grossTotal - (div.wireFee || 0) - (div.nhidFee || 0);
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 border-b border-slate-200";
+                tr.innerHTML = `
+                    <td class="p-1.5 border"><input type="date" value="${div.exDate}" onchange="updateDividend(${index}, 'exDate', this.value)" class="w-full bg-transparent"></td>
+                    <td class="p-1.5 border"><input type="date" value="${div.payDate}" onchange="updateDividend(${index}, 'payDate', this.value)" class="w-full bg-transparent"></td>
+                    <td class="p-1.5 border"><input type="number" step="0.01" value="${div.amountPerShare ?? 0}" onchange="updateDividend(${index}, 'amountPerShare', this.value)" class="w-full input-blue px-1.5 py-0.5 rounded"></td>
+                    <td class="p-1.5 border"><input type="number" value="${div.shares ?? 0}" onchange="updateDividend(${index}, 'shares', this.value)" class="w-full input-blue px-1.5 py-0.5 rounded"></td>
+                    
+                    <td class="p-1.5 border"><input type="number" value="${div.wireFee ?? 0}" onchange="updateDividend(${index}, 'wireFee', this.value)" class="w-full input-blue px-1.5 py-0.5 rounded"></td>
+                    <td class="p-1.5 border"><input type="number" value="${div.nhidFee ?? 0}" onchange="updateDividend(${index}, 'nhidFee', this.value)" class="w-full input-blue px-1.5 py-0.5 rounded"></td>
+                    <td class="p-1.5 border"><input type="number" value="${div.code54c ?? 0}" onchange="updateDividend(${index}, 'code54c', this.value)" class="w-full input-blue px-1.5 py-0.5 rounded"></td>
+                    <td class="p-1.5 border"><input type="number" value="${div.code76 ?? 0}" onchange="updateDividend(${index}, 'code76', this.value)" class="w-full input-blue px-1.5 py-0.5 rounded"></td>
+                    <td class="p-1.5 border"><input type="number" value="${div.equalFund ?? 0}" onchange="updateDividend(${index}, 'equalFund', this.value)" class="w-full input-blue px-1.5 py-0.5 rounded"></td>
+                    <td class="p-1.5 border"><input type="number" value="${div.otherIncome ?? 0}" onchange="updateDividend(${index}, 'otherIncome', this.value)" class="w-full input-blue px-1.5 py-0.5 rounded"></td>
+                    
+                    <td class="p-1.5 border bg-slate-100 font-semibold text-slate-600">$${Math.round(grossTotal).toLocaleString()}</td>
+                    <td class="p-1.5 border font-semibold text-emerald-600">$${Math.round(netTotal).toLocaleString()}</td>
+                    <td class="p-1.5 border text-center no-print">
+                        <button onclick="deleteDividend(${index})" class="text-rose-500 hover:text-rose-700"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 渲染年度別費用與成分彙總表
+        function renderYearlySummary(dividends) {
+            const tbody = document.getElementById('yearlySummaryTbody');
+            tbody.innerHTML = '';
+
+            const summaryMap = {};
+
+            dividends.forEach(d => {
+                const year = d.payDate ? d.payDate.substring(0, 4) : (d.exDate ? d.exDate.substring(0, 4) : '未知');
+                if (!summaryMap[year]) {
+                    summaryMap[year] = {
+                        wireFee: 0, nhidFee: 0, code54c: 0, code76: 0,
+                        equalFund: 0, otherIncome: 0, grossTotal: 0, netTotal: 0
+                    };
+                }
+
+                const grossTotal = (d.amountPerShare || 0) * (d.shares || 0);
+                const netAmount = grossTotal - (d.wireFee || 0) - (d.nhidFee || 0);
+
+                summaryMap[year].wireFee += (d.wireFee || 0);
+                summaryMap[year].nhidFee += (d.nhidFee || 0);
+                summaryMap[year].code54c += (d.code54c || 0);
+                summaryMap[year].code76 += (d.code76 || 0);
+                summaryMap[year].equalFund += (d.equalFund || 0);
+                summaryMap[year].otherIncome += (d.otherIncome || 0);
+                summaryMap[year].grossTotal += grossTotal;
+                summaryMap[year].netTotal += netAmount;
+            });
+
+            const sortedYears = Object.keys(summaryMap).sort().reverse();
+
+            if (sortedYears.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="p-3 text-center text-slate-400">尚無配息紀錄可供年度統計</td></tr>`;
+                return;
+            }
+
+            sortedYears.forEach(year => {
+                const item = summaryMap[year];
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 border-b border-slate-200 font-medium";
+                tr.innerHTML = `
+                    <td class="p-2 border font-bold text-slate-800">${year} 年</td>
+                    <td class="p-2 border text-slate-600">$${Math.round(item.wireFee).toLocaleString()}</td>
+                    <td class="p-2 border text-slate-600">$${Math.round(item.nhidFee).toLocaleString()}</td>
+                    <td class="p-2 border text-slate-600">$${Math.round(item.code54c).toLocaleString()}</td>
+                    <td class="p-2 border text-slate-600">$${Math.round(item.code76).toLocaleString()}</td>
+                    <td class="p-2 border text-slate-600">$${Math.round(item.equalFund).toLocaleString()}</td>
+                    <td class="p-2 border text-slate-600">$${Math.round(item.otherIncome).toLocaleString()}</td>
+                    <td class="p-2 border font-bold bg-slate-50 text-slate-700">$${Math.round(item.grossTotal).toLocaleString()}</td>
+                    <td class="p-2 border font-bold text-emerald-600">$${Math.round(item.netTotal).toLocaleString()}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function addDividendRow() {
+            const activeSymbol = portfolioData.activeSymbol;
+            if (!activeSymbol) {
+                alert('請先在左上方新增或選擇一個標的！');
+                return;
+            }
+            portfolioData.symbols[activeSymbol].dividends.push({
+                id: Date.now(),
+                exDate: new Date().toISOString().split('T')[0],
+                payDate: new Date().toISOString().split('T')[0],
+                amountPerShare: 0, shares: 0, wireFee: 0, nhidFee: 0,
+                code54c: 0, code76: 0, equalFund: 0, otherIncome: 0
+            });
+            renderAll();
+        }
+
+        function updateDividend(index, field, value) {
+            const activeSymbol = portfolioData.activeSymbol;
+            const div = portfolioData.symbols[activeSymbol].dividends[index];
+            div[field] = field.includes('Date') ? value : parseFloat(value) || 0;
+            renderAll();
+        }
+
+        function deleteDividend(index) {
+            const activeSymbol = portfolioData.activeSymbol;
+            portfolioData.symbols[activeSymbol].dividends.splice(index, 1);
+            renderAll();
+        }
+
+        // 單一標的 KPI 計算
+        function calculateMetrics(data) {
+            let totalCost = 0;
+            let currentShares = 0;
+            let cashFlows = [];
+
+            data.trades.forEach(t => {
+                const cost = (t.price * t.shares) + t.fee + t.tax;
+                if (t.type === 'BUY') {
+                    totalCost += cost;
+                    currentShares += t.shares;
+                    if (cost > 0) cashFlows.push({ date: new Date(t.date), amount: -cost });
+                } else if (t.type === 'SELL') {
+                    const revenue = (t.price * t.shares) - t.fee - t.tax;
+                    totalCost -= revenue;
+                    currentShares -= t.shares;
+                    if (revenue > 0) cashFlows.push({ date: new Date(t.date), amount: revenue });
+                }
+            });
+
+            let totalDividends = 0;
+            data.dividends.forEach(d => {
+                const grossTotal = (d.amountPerShare || 0) * (d.shares || 0);
+                const netAmount = grossTotal - (d.wireFee || 0) - (d.nhidFee || 0);
+                totalDividends += netAmount;
+                if (netAmount > 0) cashFlows.push({ date: new Date(d.payDate), amount: netAmount });
+            });
+
+            const currentValue = currentShares * (data.currentPrice || 0);
+            if (currentValue > 0) {
+                cashFlows.push({ date: new Date(), amount: currentValue });
+            }
+
+            const totalGain = (currentValue + totalDividends) - totalCost;
+            const roi = totalCost > 0 ? (totalGain / totalCost) * 100 : 0;
+
+            const annualFeeRate = ((data.mgmtFee || 0) + (data.custodyFee || 0) + (data.otherFee || 0)) / 100;
+            const selectedYears = parseInt(document.getElementById('feeYears')?.value || 1);
+            const estimatedInternalFee = currentValue > 0 ? currentValue * (1 - Math.pow(1 - annualFeeRate, selectedYears)) : 0;
+
+            const xirrVal = calculateXIRR(cashFlows) * 100;
+
+            document.getElementById('kpiCost').textContent = `$${Math.round(totalCost).toLocaleString()}`;
+            document.getElementById('kpiValue').textContent = `$${Math.round(currentValue).toLocaleString()}`;
+            document.getElementById('kpiDividends').textContent = `$${Math.round(totalDividends).toLocaleString()}`;
+            
+            const gainEl = document.getElementById('kpiGain');
+            gainEl.textContent = `$${Math.round(totalGain).toLocaleString()}`;
+            gainEl.className = `text-base md:text-lg font-bold mt-1 ${totalGain >= 0 ? 'text-rose-600' : 'text-emerald-600'}`;
+
+            const roiEl = document.getElementById('kpiRoi');
+            roiEl.textContent = `${roi.toFixed(2)}%`;
+            roiEl.className = `text-base md:text-lg font-bold mt-1 ${roi >= 0 ? 'text-rose-600' : 'text-emerald-600'}`;
+
+            document.getElementById('kpiXirr').textContent = isNaN(xirrVal) ? 'N/A' : `${xirrVal.toFixed(2)}%`;
+            document.getElementById('kpiInternalFee').textContent = `$${Math.round(estimatedInternalFee).toLocaleString()}`;
+        }
+
+        // 跨標的彙總明細與繪製雙圖表
+        function renderPortfolioSummaryAndCharts() {
+            const summaryTbody = document.getElementById('portfolioSummaryTbody');
+            summaryTbody.innerHTML = '';
+
+            let symbolStats = [];
+            let totalPortfolioValue = 0;
+            let totalPortfolioCost = 0;
+            let totalPortfolioGain = 0;
+            let allPortfolioCashFlows = [];
+
+            // 巡訪所有標的並計算總額
+            Object.keys(portfolioData.symbols).forEach(symbol => {
+                const data = portfolioData.symbols[symbol];
+                let cost = 0;
+                let shares = 0;
+                let cashFlows = [];
+
+                data.trades.forEach(t => {
+                    const c = (t.price * t.shares) + t.fee + t.tax;
+                    if (t.type === 'BUY') {
+                        cost += c;
+                        shares += t.shares;
+                        if (c > 0) {
+                            cashFlows.push({ date: new Date(t.date), amount: -c });
+                            allPortfolioCashFlows.push({ date: new Date(t.date), amount: -c });
+                        }
+                    } else if (t.type === 'SELL') {
+                        const rev = (t.price * t.shares) - t.fee - t.tax;
+                        cost -= rev;
+                        shares -= t.shares;
+                        if (rev > 0) {
+                            cashFlows.push({ date: new Date(t.date), amount: rev });
+                            allPortfolioCashFlows.push({ date: new Date(t.date), amount: rev });
+                        }
+                    }
+                });
+
+                let divTotal = 0;
+                data.dividends.forEach(d => {
+                    const gross = (d.amountPerShare || 0) * (d.shares || 0);
+                    const net = gross - (d.wireFee || 0) - (d.nhidFee || 0);
+                    divTotal += net;
+                    if (net > 0) {
+                        cashFlows.push({ date: new Date(d.payDate), amount: net });
+                        allPortfolioCashFlows.push({ date: new Date(d.payDate), amount: net });
+                    }
+                });
+
+                const mktValue = shares * (data.currentPrice || 0);
+                if (mktValue > 0) {
+                    cashFlows.push({ date: new Date(), amount: mktValue });
+                    allPortfolioCashFlows.push({ date: new Date(), amount: mktValue });
+                }
+
+                const unRealizedGain = (mktValue + divTotal) - cost;
+                const xirr = calculateXIRR(cashFlows) * 100;
+
+                totalPortfolioValue += mktValue;
+                totalPortfolioCost += cost;
+                totalPortfolioGain += unRealizedGain;
+
+                symbolStats.push({
+                    symbol,
+                    beta: data.beta ?? 1.0,
+                    cost,
+                    mktValue,
+                    unRealizedGain,
+                    xirr: isNaN(xirr) ? 0 : xirr
+                });
+            });
+
+            if (symbolStats.length === 0) {
+                summaryTbody.innerHTML = `<tr><td colspan="8" class="p-3 text-center text-slate-400">目前無任何標的，請新增標的並輸入交易資料</td></tr>`;
+                updateCharts([], 0);
+                return;
+            }
+
+            let portfolioWeightedBeta = 0;
+
+            // 逐列渲染各標的資料
+            symbolStats.forEach(stat => {
+                const weight = totalPortfolioValue > 0 ? (stat.mktValue / totalPortfolioValue) : 0;
+                const weightedBetaContribution = weight * stat.beta;
+                portfolioWeightedBeta += weightedBetaContribution;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 border-b border-slate-200";
+                tr.innerHTML = `
+                    <td class="p-2.5 border border-slate-200 font-bold text-slate-800">${stat.symbol}</td>
+                    <td class="p-2.5 border border-slate-200 text-right font-semibold">${(weight * 100).toFixed(2)}%</td>
+                    <td class="p-2.5 border border-slate-200 text-right text-slate-700">${stat.beta.toFixed(2)}</td>
+                    <td class="p-2.5 border border-slate-200 text-right text-slate-600">${weightedBetaContribution.toFixed(3)}</td>
+                    <td class="p-2.5 border border-slate-200 text-right text-slate-700">$${Math.round(stat.cost).toLocaleString()}</td>
+                    <td class="p-2.5 border border-slate-200 text-right font-bold text-slate-800">$${Math.round(stat.mktValue).toLocaleString()}</td>
+                    <td class="p-2.5 border border-slate-200 text-right font-bold ${stat.unRealizedGain >= 0 ? 'text-rose-600' : 'text-emerald-600'}">$${Math.round(stat.unRealizedGain).toLocaleString()}</td>
+                    <td class="p-2.5 border border-slate-200 text-right font-bold ${stat.xirr >= 0 ? 'text-rose-600' : 'text-emerald-600'}">${stat.xirr.toFixed(2)}%</td>
+                `;
+                summaryTbody.appendChild(tr);
+            });
+
+            // 計算全組合合併年化 XIRR
+            const totalPortfolioXIRR = calculateXIRR(allPortfolioCashFlows) * 100;
+            const finalTotalXirr = isNaN(totalPortfolioXIRR) ? 0 : totalPortfolioXIRR;
+
+            // 渲染最下方「合計」列
+            const totalTr = document.createElement('tr');
+            totalTr.className = "bg-slate-100 font-bold border-t-2 border-slate-300 text-slate-800";
+            totalTr.innerHTML = `
+                <td class="p-2.5 border border-slate-300 font-bold">合計 / 全組合</td>
+                <td class="p-2.5 border border-slate-300 text-right font-bold text-blue-700">100.00%</td>
+                <td class="p-2.5 border border-slate-300 text-right font-bold text-amber-700" title="加權組合 Beta 值">${portfolioWeightedBeta.toFixed(2)}</td>
+                <td class="p-2.5 border border-slate-300 text-right font-bold text-amber-700">${portfolioWeightedBeta.toFixed(3)}</td>
+                <td class="p-2.5 border border-slate-300 text-right font-bold">$${Math.round(totalPortfolioCost).toLocaleString()}</td>
+                <td class="p-2.5 border border-slate-300 text-right font-bold text-blue-900">$${Math.round(totalPortfolioValue).toLocaleString()}</td>
+                <td class="p-2.5 border border-slate-300 text-right font-bold ${totalPortfolioGain >= 0 ? 'text-rose-600' : 'text-emerald-600'}">$${Math.round(totalPortfolioGain).toLocaleString()}</td>
+                <td class="p-2.5 border border-slate-300 text-right font-bold ${finalTotalXirr >= 0 ? 'text-rose-600' : 'text-emerald-600'}">${finalTotalXirr.toFixed(2)}%</td>
+            `;
+            summaryTbody.appendChild(totalTr);
+
+            // 更新圖表
+            updateCharts(symbolStats, totalPortfolioValue);
+        }
+
+        // 繪製 Chart.js
+        function updateCharts(symbolStats, totalPortfolioValue) {
+            const labels = symbolStats.map(s => s.symbol);
+            const values = symbolStats.map(s => s.mktValue);
+            const xirrValues = symbolStats.map(s => s.xirr.toFixed(2));
+
+            const scheme2Colors = [
+                '#FACC15',
+                '#22C55E',
+                '#A3E635',
+                '#10B981',
+                '#64748B',
+                '#4B5563'
+            ];
+
+            // 1. 資產配置中空圓餅圖 (Doughnut)
+            const ctxDoughnut = document.getElementById('assetAllocationChart').getContext('2d');
+            if (doughnutChartInstance) doughnutChartInstance.destroy();
+
+            const centerTextPlugin = {
+                id: 'centerText',
+                beforeDraw(chart) {
+                    const { width, height, ctx } = chart;
+                    ctx.save();
+                    
+                    const text1 = "總市值";
+                    const text2 = `$${(totalPortfolioValue / 10000).toFixed(1)} 萬`;
+
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    ctx.font = '600 12px sans-serif';
+                    ctx.fillStyle = '#64748b';
+                    ctx.fillText(text1, width / 2, height / 2 - 12);
+
+                    ctx.font = 'bold 18px sans-serif';
+                    ctx.fillStyle = '#1e293b';
+                    ctx.fillText(text2, width / 2, height / 2 + 10);
+
+                    ctx.restore();
+                }
+            };
+
+            const doughnutColors = labels.map((_, i) => scheme2Colors[i % scheme2Colors.length]);
+
+            doughnutChartInstance = new Chart(ctxDoughnut, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values.length > 0 ? values : [1],
+                        backgroundColor: values.length > 0 ? doughnutColors : ['#e2e8f0']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '68%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { size: 11 } } }
+                    }
+                },
+                plugins: [centerTextPlugin]
+            });
+
+            // 2. 個別標的 XIRR 年化報酬率直立長條圖 (Bar Chart)
+            const ctxBar = document.getElementById('xirrBarChart').getContext('2d');
+            if (barChartInstance) barChartInstance.destroy();
+
+            barChartInstance = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'XIRR (%)',
+                        data: xirrValues,
+                        backgroundColor: '#F59E0B',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            ticks: { callback: value => value + '%' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // XIRR 演算法
+        function calculateXIRR(cashFlows) {
+            if (cashFlows.length < 2) return 0;
+
+            let rate = 0.1;
+            const maxIter = 100;
+            const tol = 1e-6;
+            const firstDate = cashFlows[0].date;
+
+            for (let i = 0; i < maxIter; i++) {
+                let npv = 0;
+                let df = 0;
+
+                for (let j = 0; j < cashFlows.length; j++) {
+                    const days = (cashFlows[j].date - firstDate) / (1000 * 60 * 60 * 24);
+                    const yearFrac = days / 365.0;
+                    const discount = Math.pow(1 + rate, yearFrac);
+
+                    npv += cashFlows[j].amount / discount;
+                    df -= (yearFrac * cashFlows[j].amount) / (discount * (1 + rate));
+                }
+
+                const newRate = rate - npv / df;
+                if (Math.abs(newRate - rate) < tol) return newRate;
+                rate = newRate;
+            }
+            return rate;
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(portfolioData, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `ETF_Portfolio_Backup_${new Date().toISOString().split('T')[0]}.etf`);
+            dlAnchorElem.click();
+        }
+
+        function importData(event) {
+            const fileReader = new FileReader();
+            fileReader.onload = function(e) {
+                try {
+                    portfolioData = JSON.parse(e.target.result);
+                    saveData();
+                    renderSymbolSelect();
+                    renderAll();
+                    alert('資料匯入成功！');
+                } catch (err) {
+                    alert('檔案格式不正確！');
+                }
+            };
+            fileReader.readAsText(event.target.files[0]);
+        }
+
+        function resetData() {
+            if (confirm('確定要清空所有試算與交易紀錄嗎？此動作無法復原。')) {
+                localStorage.removeItem('ETF_PORTFOLIO_DATA');
+                portfolioData = { 
+                    availableCash: 0,
+                    symbols: {}, 
+                    activeSymbol: "" 
+                };
+                renderSymbolSelect();
+                renderAll();
+            }
+        }
+    </script>
+</body>
+</html>
