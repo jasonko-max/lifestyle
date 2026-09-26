@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ETF 未來配息與收益試算系統</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    input::-webkit-outer-spin-button,
+    input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+    
+    /* 淡藍色可編輯輸入框共用樣式 */
+    .input-blue {
+      background-color: #eff6ff;
+      border: 1px solid #93c5fd;
+      border-radius: 0.375rem;
+      padding: 0.2rem 0.25rem;
+      color: #1e3a8a;
+      font-weight: 600;
+      transition: all 0.2s;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .input-blue:focus {
+      outline: none;
+      border-color: #3b82f6;
+      background-color: #ffffff;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+    }
+    
+    /* 列印樣式優化 */
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        padding-bottom: 0 !important;
+      }
+      .card-print {
+        box-shadow: none !important;
+        border: 1px solid #cbd5e1 !important;
+        break-inside: avoid;
+        margin-bottom: 1.5rem !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-12">
+
+  <!-- 頁首與功能操作區 -->
+  <header class="bg-indigo-800 text-white shadow-lg py-6 mb-6">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div>
+        <h1 class="text-2xl font-bold tracking-wide flex items-center gap-2">
+          <span>📈</span> ETF 未來配息與收益試算系統
+        </h1>
+        <p class="text-indigo-200 text-sm mt-1">淡藍色欄位（<span class="bg-blue-100 text-blue-900 px-1 rounded font-mono">bg-blue-50</span>）為可編輯數字輸入區</p>
+      </div>
+      
+      <!-- 二代健保全域設定區 -->
+      <div class="bg-indigo-900/80 p-3 rounded-xl border border-indigo-600/40 flex items-center gap-4 text-xs shadow-inner">
+        <div>
+          <label class="block text-indigo-200 mb-1">二代健保補充保費率</label>
+          <div class="flex items-center gap-1">
+            <input type="number" id="healthTaxRate" value="2.11" step="0.01" class="w-16 input-blue text-right" onchange="updateGlobalSettings()">
+            <span>%</span>
+          </div>
+        </div>
+        <div class="border-l border-indigo-700 h-8"></div>
+        <div>
+          <label class="block text-indigo-200 mb-1">二代健保扣繳門檻</label>
+          <div class="flex items-center gap-1">
+            <input type="number" id="healthTaxThreshold" value="20000" step="1000" class="w-24 input-blue text-right" onchange="updateGlobalSettings()">
+            <span>元</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4">
+
+    <!-- 標頁籤切換與工具欄 -->
+    <div class="flex flex-wrap justify-between items-center gap-4 mb-6 no-print">
+      <!-- ETF 標的分頁與總覽頁籤切換 -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-2 max-w-full" id="targetTabsContainer">
+        <!-- 動態渲染頁籤 -->
+      </div>
+
+      <!-- 功能按鈕群 (匯出/匯入/列印/重置) -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <button onclick="addNewTarget()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-3.5 py-2 rounded-lg shadow transition flex items-center gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+          新增標的
+        </button>
+        <button onclick="exportJSON()" class="bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium px-3.5 py-2 rounded-lg shadow transition flex items-center gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+          匯出 JSON
+        </button>
+        <label class="bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium px-3.5 py-2 rounded-lg shadow transition flex items-center gap-1 cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+          匯入 JSON
+          <input type="file" id="importFileInput" accept=".json" class="hidden" onchange="importJSON(event)">
+        </label>
+        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3.5 py-2 rounded-lg shadow transition flex items-center gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 002-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+          列印頁面
+        </button>
+        <button onclick="resetData()" class="bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium px-3.5 py-2 rounded-lg shadow transition flex items-center gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+          清空重來
+        </button>
+      </div>
+    </div>
+
+    <!-- 需求 3：跨標的 1-12 月現金流總覽 View (預設隱藏，切換分頁時顯示) -->
+    <div id="overviewView" class="hidden space-y-6">
+      <div class="bg-white rounded-xl shadow-md p-6 border border-slate-200 card-print">
+        <div class="flex justify-between items-center mb-4 border-b pb-3">
+          <div>
+            <h2 class="text-xl font-bold text-indigo-900 flex items-center gap-2">
+              <span>🗓️</span> 多檔 ETF 1 至 12 月除息與預計發放月份對應總覽
+            </h2>
+            <p class="text-xs text-slate-500 mt-1">整合所有已建立標的之除息與發放時間，幫助規劃每月現金流分配。</p>
+          </div>
+          <div class="flex items-center gap-4 text-xs font-semibold">
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 bg-emerald-500 rounded-full inline-block"></span> 除息月份 (Ex-Date)</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 bg-blue-600 rounded-full inline-block"></span> 預計發放月份 (Pay-Date)</span>
+          </div>
+        </div>
+
+        <div class="w-full">
+          <table class="w-full table-fixed text-center border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr class="bg-slate-800 text-white border-b border-slate-300">
+                <th class="py-3 px-2 w-[12%] text-left pl-4 rounded-tl-lg font-bold">標的代號</th>
+                <th class="py-3 px-1 w-[7%]">1月</th>
+                <th class="py-3 px-1 w-[7%]">2月</th>
+                <th class="py-3 px-1 w-[7%]">3月</th>
+                <th class="py-3 px-1 w-[7%]">4月</th>
+                <th class="py-3 px-1 w-[7%]">5月</th>
+                <th class="py-3 px-1 w-[7%]">6月</th>
+                <th class="py-3 px-1 w-[7%]">7月</th>
+                <th class="py-3 px-1 w-[7%]">8月</th>
+                <th class="py-3 px-1 w-[7%]">9月</th>
+                <th class="py-3 px-1 w-[7%]">10月</th>
+                <th class="py-3 px-1 w-[7%]">11月</th>
+                <th class="py-3 px-1 w-[7%] rounded-tr-lg">12月</th>
+              </tr>
+            </thead>
+            <tbody id="overviewTableBody" class="divide-y divide-slate-200">
+              <!-- 動態生成 1-12月總覽對應表 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 單一標的試算 View -->
+    <div id="targetDetailView" class="block space-y-6">
+
+      <!-- 最上方公式說明與動態百分比編輯區 -->
+      <div class="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-xl shadow-md p-5 border border-indigo-700 card-print">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h3 class="text-sm font-semibold text-blue-300 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+              <span>💡</span> 季度配息預估計算公式
+            </h3>
+            <p class="text-base font-medium text-slate-100 flex flex-wrap items-center gap-2">
+              季度配息預估 (以8/31淨值組成推估) = 
+              <span class="bg-indigo-950/80 px-3 py-1 rounded-lg border border-indigo-500/30 flex items-center gap-1.5 font-mono">
+                ( 收益平準金 + 資本損益平準金 × 
+                <input type="number" id="capGainRatio" value="20" step="1" class="w-16 input-blue text-center font-bold text-blue-900 inline-block" onchange="updateCapGainRatio(this.value)">
+                % ) ÷ 4 季
+              </span>
+            </p>
+          </div>
+          <div class="text-xs text-indigo-200 bg-indigo-950/50 p-3 rounded-lg border border-indigo-800/50 max-w-md">
+            說明：可輸入資本損益平準金之估算比例（預設 20%）。第一年 Q1/Q2 顯示為 "--"，推估值將遞延顯示於第一年 Q3/Q4 及次年 Q1/Q2，後續依此類推。
+          </div>
+        </div>
+      </div>
+
+      <!-- 基本設定 (ETF 標的代號、除息月份與預計發放月份) -->
+      <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200 card-print">
+        <div class="flex justify-between items-center mb-4 border-b pb-3">
+          <h2 class="text-lg font-bold text-indigo-900 flex items-center gap-2">
+            <span>📌</span> 基本設定 — ETF: 
+            <input type="text" id="etfCodeInput" value="00919" class="input-blue text-indigo-900 font-bold w-28 text-center text-lg" onchange="updateCurrentTargetCode(this.value)">
+          </h2>
+          <button onclick="removeCurrentTarget()" id="deleteTargetBtn" class="text-xs bg-rose-100 hover:bg-rose-200 text-rose-700 px-3 py-1.5 rounded-lg transition font-medium no-print">
+            刪除當前標的
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+          <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+            <span class="text-slate-500 block text-xs mb-1 font-medium">除息月份 (季配，請輸入月份)</span>
+            <div class="flex items-center gap-1.5">
+              <input type="number" id="exMonth1" min="1" max="12" class="w-12 input-blue text-center" onchange="updateExMonths()">
+              <span class="text-slate-400">,</span>
+              <input type="number" id="exMonth2" min="1" max="12" class="w-12 input-blue text-center" onchange="updateExMonths()">
+              <span class="text-slate-400">,</span>
+              <input type="number" id="exMonth3" min="1" max="12" class="w-12 input-blue text-center" onchange="updateExMonths()">
+              <span class="text-slate-400">,</span>
+              <input type="number" id="exMonth4" min="1" max="12" class="w-12 input-blue text-center" onchange="updateExMonths()">
+              <span class="text-xs text-slate-500 font-semibold ml-1">月</span>
+            </div>
+          </div>
+
+          <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+            <span class="text-slate-500 block text-xs mb-1 font-medium">預計發放月份 (請輸入月份)</span>
+            <div class="flex items-center gap-1.5">
+              <input type="number" id="payMonth1" min="1" max="12" class="w-12 input-blue text-center" onchange="updatePayMonths()">
+              <span class="text-slate-400">,</span>
+              <input type="number" id="payMonth2" min="1" max="12" class="w-12 input-blue text-center" onchange="updatePayMonths()">
+              <span class="text-slate-400">,</span>
+              <input type="number" id="payMonth3" min="1" max="12" class="w-12 input-blue text-center" onchange="updatePayMonths()">
+              <span class="text-slate-400">,</span>
+              <input type="number" id="payMonth4" min="1" max="12" class="w-12 input-blue text-center" onchange="updatePayMonths()">
+              <span class="text-xs text-slate-500 font-semibold ml-1">月</span>
+            </div>
+          </div>
+
+          <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+            <span class="text-slate-500 block text-xs mb-1 font-medium">平準金推估機制</span>
+            <span class="font-semibold text-slate-700">8/31 淨值推估下一個週期</span>
+          </div>
+
+          <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200/80 shadow-sm">
+            <span class="text-slate-500 block text-xs mb-1 font-medium">計算精度設定</span>
+            <span class="font-semibold text-slate-700">稅後配息採四捨五入取整數</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 年度試算卡片容器 -->
+      <div id="yearsContainer" class="space-y-8"></div>
+
+      <!-- 新增未來年份按鈕 -->
+      <div class="mt-8 flex justify-center items-center gap-4 no-print">
+        <button onclick="addYear()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-6 py-3 rounded-xl shadow-md transition flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+          新增未來預估年份 (+1 年)
+        </button>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script>
+    const STORAGE_KEY = 'ETF_DISTRIBUTION_CALCULATOR_DATA_V3';
+
+    let appState = {
+      activeTab: '0', // 'overview' 或 Target 的 index 字串 (如 '0', '1')
+      activeTargetIndex: 0,
+      capGainRatio: 20,
+      healthTaxRate: 2.11,
+      healthTaxThreshold: 20000,
+      targets: [
+        {
+          code: '00919',
+          exMonths: [3, 6, 9, 12],
+          payMonths: [4, 7, 10, 1],
+          years: [
+            {
+              year: 2026,
+              rocYear: 115,
+              age: 48,
+              actualPayout: 0,
+              incomeSmoothing: 1.49,
+              capitalGainSmoothing: 4.77,
+              quarters: [
+                { q: 'Q1', shares: 438000, price: 23.74, incomeBuf: 1.00, capBuf: 7.61, perSharePayout: 0.72, avgCostAfterEx: 0, estPayoutPerShare: 0.72, actualAmount: 0 },
+                { q: 'Q2', shares: 416000, price: 22.49, incomeBuf: 0.82, capBuf: 6.57, perSharePayout: 0.72, avgCostAfterEx: 0, estPayoutPerShare: 0.70, actualAmount: 0 },
+                { q: 'Q3', shares: 416000, price: 21.79, incomeBuf: 1.49, capBuf: 5.25, perSharePayout: 0.54, avgCostAfterEx: 0, estPayoutPerShare: 0.60, actualAmount: 0 },
+                { q: 'Q4', shares: 416000, price: 22.19, incomeBuf: 0.96, capBuf: 6.25, perSharePayout: 0.54, avgCostAfterEx: 0, estPayoutPerShare: 0.60, actualAmount: 0 }
+              ]
+            },
+            {
+              year: 2027,
+              rocYear: 116,
+              age: 49,
+              actualPayout: 0,
+              incomeSmoothing: 1.65,
+              capitalGainSmoothing: 15.32,
+              quarters: [
+                { q: 'Q1', shares: 416000, price: 23.91, incomeBuf: 0.45, capBuf: 8.35, perSharePayout: 0.78, avgCostAfterEx: 0, estPayoutPerShare: 0.58, actualAmount: 0 },
+                { q: 'Q2', shares: 414000, price: 30.69, incomeBuf: 0.55, capBuf: 15.06, perSharePayout: 1.00, avgCostAfterEx: 0, estPayoutPerShare: 0.58, actualAmount: 0 },
+                { q: 'Q3', shares: 414000, price: 32.74, incomeBuf: 1.68, capBuf: 15.93, perSharePayout: 1.10, avgCostAfterEx: 0, estPayoutPerShare: 0.90, actualAmount: 0 },
+                { q: 'Q4', shares: 414000, price: 0,     incomeBuf: 0,    capBuf: 0,    perSharePayout: 0,    avgCostAfterEx: 0, estPayoutPerShare: 0.95, actualAmount: 0 }
+              ]
+            }
+          ]
+        }
+      ]
+    };
+
+    window.onload = () => {
+      loadFromLocalStorage();
+      renderAll();
+    };
+
+    function saveToLocalStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      } catch (e) {
+        console.error("無法儲存至 LocalStorage", e);
+      }
+    }
+
+    function loadFromLocalStorage() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.targets && parsed.targets.length > 0) {
+            appState = parsed;
+          }
+        }
+      } catch (e) {
+        console.error("無法讀取 LocalStorage 資料", e);
+      }
+    }
+
+    function getCurrentTarget() {
+      if (!appState.targets[appState.activeTargetIndex]) {
+        appState.activeTargetIndex = 0;
+      }
+      return appState.targets[appState.activeTargetIndex];
+    }
+
+    function renderAll() {
+      // 1. 同步全域設定
+      document.getElementById('capGainRatio').value = appState.capGainRatio !== undefined ? appState.capGainRatio : 20;
+      document.getElementById('healthTaxRate').value = appState.healthTaxRate !== undefined ? appState.healthTaxRate : 2.11;
+      document.getElementById('healthTaxThreshold').value = appState.healthTaxThreshold !== undefined ? appState.healthTaxThreshold : 20000;
+
+      // 2. 渲染頂部 Tabs
+      renderTargetTabs();
+
+      // 3. 切換視圖 (總覽 或 標的細節)
+      if (appState.activeTab === 'overview') {
+        document.getElementById('overviewView').classList.remove('hidden');
+        document.getElementById('targetDetailView').classList.add('hidden');
+        renderOverviewTable();
+      } else {
+        document.getElementById('overviewView').classList.add('hidden');
+        document.getElementById('targetDetailView').classList.remove('hidden');
+
+        const currentTarget = getCurrentTarget();
+        document.getElementById('etfCodeInput').value = currentTarget.code || '00919';
+
+        const exM = currentTarget.exMonths || [0, 0, 0, 0];
+        const payM = currentTarget.payMonths || [0, 0, 0, 0];
+        for (let i = 0; i < 4; i++) {
+          document.getElementById(`exMonth${i+1}`).value = exM[i] || 0;
+          document.getElementById(`payMonth${i+1}`).value = payM[i] || 0;
+        }
+
+        const delBtn = document.getElementById('deleteTargetBtn');
+        if (delBtn) {
+          delBtn.style.display = appState.targets.length > 1 ? 'inline-block' : 'none';
+        }
+
+        const container = document.getElementById('yearsContainer');
+        container.innerHTML = '';
+        currentTarget.years.forEach((yData, yIdx) => {
+          container.appendChild(createYearCard(yData, yIdx));
+        });
+
+        calculateAll();
+      }
+    }
+
+    function renderTargetTabs() {
+      const tabsContainer = document.getElementById('targetTabsContainer');
+      tabsContainer.innerHTML = '';
+
+      // 總覽 Tab
+      const isOverview = appState.activeTab === 'overview';
+      const overviewBtn = document.createElement('button');
+      overviewBtn.className = `px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
+        isOverview 
+          ? 'bg-amber-600 text-white shadow-md ring-2 ring-amber-300' 
+          : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+      }`;
+      overviewBtn.innerHTML = `<span>🗓️</span> 1-12月現金流總覽`;
+      overviewBtn.onclick = () => {
+        appState.activeTab = 'overview';
+        saveToLocalStorage();
+        renderAll();
+      };
+      tabsContainer.appendChild(overviewBtn);
+
+      // 分隔線
+      const divider = document.createElement('div');
+      divider.className = "h-6 w-px bg-slate-300 mx-1";
+      tabsContainer.appendChild(divider);
+
+      // 各標的 Tabs
+      appState.targets.forEach((target, index) => {
+        const isActive = (!isOverview && index === appState.activeTargetIndex);
+        const btn = document.createElement('button');
+        btn.className = `px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-1.5 whitespace-nowrap ${
+          isActive 
+            ? 'bg-indigo-700 text-white shadow-md ring-2 ring-indigo-400' 
+            : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+        }`;
+        btn.innerHTML = `<span>📊</span> ${target.code || '新標的'}`;
+        btn.onclick = () => {
+          appState.activeTab = index.toString();
+          appState.activeTargetIndex = index;
+          saveToLocalStorage();
+          renderAll();
+        };
+        tabsContainer.appendChild(btn);
+      });
+    }
+
+    function renderOverviewTable() {
+      const tbody = document.getElementById('overviewTableBody');
+      tbody.innerHTML = '';
+
+      appState.targets.forEach((target) => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+
+        let tdHTML = `<td class="py-3.5 px-2 text-left pl-4 font-bold text-indigo-900 border-r border-slate-100">${target.code || '未知標的'}</td>`;
+
+        const exSet = new Set((target.exMonths || []).map(Number).filter(m => m >= 1 && m <= 12));
+        const paySet = new Set((target.payMonths || []).map(Number).filter(m => m >= 1 && m <= 12));
+
+        for (let m = 1; m <= 12; m++) {
+          const isEx = exSet.has(m);
+          const isPay = paySet.has(m);
+
+          let badgeHTML = '';
+          if (isEx && isPay) {
+            badgeHTML = `
+              <div class="flex flex-col gap-1 items-center justify-center">
+                <span class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-extrabold border border-emerald-300 w-full">除息</span>
+                <span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-extrabold border border-blue-300 w-full">發放</span>
+              </div>`;
+          } else if (isEx) {
+            badgeHTML = `<span class="px-2 py-1 rounded-md bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-300 inline-block shadow-sm">除息</span>`;
+          } else if (isPay) {
+            badgeHTML = `<span class="px-2 py-1 rounded-md bg-blue-100 text-blue-800 text-xs font-bold border border-blue-300 inline-block shadow-sm">發放</span>`;
+          } else {
+            badgeHTML = `<span class="text-slate-300 font-light">-</span>`;
+          }
+
+          tdHTML += `<td class="py-3 px-1">${badgeHTML}</td>`;
+        }
+
+        tr.innerHTML = tdHTML;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function createYearCard(yData, yIdx) {
+      const isFirstYear = (yIdx === 0);
+      const card = document.createElement('div');
+      card.className = "bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden card-print";
+
+      let yearHeaderHTML = isFirstYear ? `
+        <div class="flex flex-wrap items-center gap-3 text-slate-100">
+          <div class="flex items-center gap-1 font-bold text-lg">
+            <input type="number" value="${yData.year ?? 0}" class="w-20 input-blue text-center font-bold text-slate-900" 
+              onchange="updateYearField(${yIdx}, 'year', this.value)">
+            <span>年 (民國</span>
+            <input type="number" value="${yData.rocYear ?? 0}" class="w-16 input-blue text-center font-bold text-slate-900" 
+              onchange="updateYearField(${yIdx}, 'rocYear', this.value)">
+            <span>年)</span>
+          </div>
+          <div class="flex items-center gap-1 bg-slate-700/80 px-3 py-1 rounded-full text-xs">
+            <span>年齡：</span>
+            <input type="number" value="${yData.age ?? 0}" class="w-14 input-blue text-center font-semibold text-slate-900 text-xs py-0.5" 
+              onchange="updateYearField(${yIdx}, 'age', this.value)">
+            <span>歲</span>
+          </div>
+        </div>
+      ` : `
+        <div class="flex items-center gap-4">
+          <span class="text-xl font-bold tracking-wider">${yData.year} 年 (民國 ${yData.rocYear} 年)</span>
+          <span class="bg-slate-700 text-slate-300 text-xs px-2.5 py-1 rounded-full">年齡：${yData.age} 歲</span>
+        </div>
+      `;
+
+      card.innerHTML = `
+        <!-- 年份頂部 Header -->
+        <div class="bg-slate-800 text-white px-5 py-3.5 flex flex-wrap justify-between items-center gap-4">
+          ${yearHeaderHTML}
+          <button onclick="removeYear(${yIdx})" class="text-xs bg-rose-600/80 hover:bg-rose-600 px-3 py-1.5 rounded-lg transition text-white no-print">
+            刪除此年份
+          </button>
+        </div>
+
+        <!-- 平準金估計算區 -->
+        <div class="bg-slate-50 border-b border-slate-200 p-3.5 px-5 flex flex-wrap items-center gap-6 text-sm">
+          <span class="font-bold text-slate-700 flex items-center gap-1">📅 8/31 淨值組成預估:</span>
+          <div class="flex items-center gap-2">
+            <label class="text-slate-600 text-xs sm:text-sm">收益平準金:</label>
+            <input type="number" step="0.01" value="${yData.incomeSmoothing ?? 0}" 
+              class="w-20 input-blue text-right"
+              onchange="updateYearProperty(${yIdx}, 'incomeSmoothing', this.value)">
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-slate-600 text-xs sm:text-sm">資本損益平準金:</label>
+            <input type="number" step="0.01" value="${yData.capitalGainSmoothing ?? 0}" 
+              class="w-20 input-blue text-right"
+              onchange="updateYearProperty(${yIdx}, 'capitalGainSmoothing', this.value)">
+          </div>
+        </div>
+
+        <!-- 需求 1：自適應表格寬度，table-fixed，強迫欄位均分與自動換行，無左右捲軸 -->
+        <div class="w-full">
+          <table class="w-full table-fixed text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 border-b border-slate-200">
+                <th class="py-2.5 px-1 text-center font-bold break-words w-[5%]">季度</th>
+                <th class="py-2.5 px-1 text-right font-bold break-words w-[9%]">持有單位數</th>
+                <th class="py-2.5 px-1 text-right font-bold break-words w-[8%]">除息前股價</th>
+                <th class="py-2.5 px-1 text-right font-bold break-words w-[8%]">除息前平準金(收益)</th>
+                <th class="py-2.5 px-1 text-right font-bold break-words w-[8%]">除息前平準金(資本)</th>
+                <th class="py-2.5 px-1 text-right font-bold break-words w-[9%]">每單位分配(實際)</th>
+                <th class="py-2.5 px-1 text-right font-bold break-words w-[9%] bg-blue-50/70 text-blue-900 border-x border-blue-200">除息後平均成本</th>
+                <th class="py-2.5 px-1 text-right font-bold break-words w-[10%] bg-indigo-50/80 text-indigo-900">季度配息預估(單位)</th>
+                <th class="py-2.5 px-1 text-right font-bold break-words w-[9%] bg-blue-50/30">年度配息預估(單位)</th>
+                <th class="py-2.5 px-1 text-right font-bold break-words w-[9%]">扣費用後預估金額</th>
+                <th class="py-2.5 px-1 text-right font-bold break-words w-[9%] bg-blue-50/70 text-blue-900 border-x border-blue-200">實際金額</th>
+                <th class="py-2.5 px-1 text-right font-bold break-words w-[7%] bg-slate-200/60">落差</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              ${yData.quarters.map((q, qIdx) => `
+                <tr class="hover:bg-slate-50/80 transition">
+                  <td class="py-2 px-1 font-bold text-center text-indigo-700">${q.q}</td>
+                  <td class="py-2 px-1 text-right">
+                    <input type="number" value="${q.shares ?? 0}" class="input-blue text-right"
+                      onchange="updateQuarterProperty(${yIdx}, ${qIdx}, 'shares', this.value)">
+                  </td>
+                  <td class="py-2 px-1 text-right">
+                    <input type="number" step="0.01" value="${q.price ?? 0}" class="input-blue text-right"
+                      onchange="updateQuarterProperty(${yIdx}, ${qIdx}, 'price', this.value)">
+                  </td>
+                  <td class="py-2 px-1 text-right">
+                    <input type="number" step="0.01" value="${q.incomeBuf ?? 0}" class="input-blue text-right"
+                      onchange="updateQuarterProperty(${yIdx}, ${qIdx}, 'incomeBuf', this.value)">
+                  </td>
+                  <td class="py-2 px-1 text-right">
+                    <input type="number" step="0.01" value="${q.capBuf ?? 0}" class="input-blue text-right"
+                      onchange="updateQuarterProperty(${yIdx}, ${qIdx}, 'capBuf', this.value)">
+                  </td>
+                  <td class="py-2 px-1 text-right">
+                    <input type="number" step="0.01" value="${q.perSharePayout ?? 0}" class="input-blue text-right"
+                      onchange="updateQuarterProperty(${yIdx}, ${qIdx}, 'perSharePayout', this.value)">
+                  </td>
+                  <td class="py-2 px-1 text-right bg-blue-50/30 border-x border-blue-100">
+                    <input type="number" step="0.01" value="${q.avgCostAfterEx ?? 0}" class="input-blue text-right font-semibold"
+                      onchange="updateQuarterProperty(${yIdx}, ${qIdx}, 'avgCostAfterEx', this.value)">
+                  </td>
+                  <!-- 需求 2：季度配息預估(單位)欄位 -->
+                  <td class="py-2 px-1 text-right font-bold text-slate-700 bg-indigo-50/50 break-all" id="qEstP_${yIdx}_${qIdx}">--</td>
+                  <td class="py-2 px-1 text-right bg-blue-50/30">
+                    <input type="number" step="0.01" value="${q.estPayoutPerShare ?? 0}" class="input-blue text-right font-semibold text-indigo-900"
+                      onchange="updateQuarterProperty(${yIdx}, ${qIdx}, 'estPayoutPerShare', this.value)">
+                  </td>
+                  <td class="py-2 px-1 text-right font-semibold text-slate-800 break-all" id="netPayout_${yIdx}_${qIdx}">$0</td>
+                  <td class="py-2 px-1 text-right bg-blue-50/30 border-x border-blue-100">
+                    <input type="number" value="${q.actualAmount ?? 0}" class="input-blue text-right font-semibold text-slate-900"
+                      onchange="updateQuarterProperty(${yIdx}, ${qIdx}, 'actualAmount', this.value)">
+                  </td>
+                  <td class="py-2 px-1 text-right font-bold bg-slate-50/80 break-all" id="qDiff_${yIdx}_${qIdx}">$0</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 底部總結區 -->
+        <div class="bg-slate-100/80 p-3.5 px-5 border-t border-slate-200 flex flex-wrap justify-between items-center gap-4 text-xs sm:text-sm">
+          <div class="flex flex-wrap items-center gap-6">
+            <div>
+              <span class="text-slate-500">年度配息總額 (扣費後預估):</span>
+              <span class="text-base font-bold text-indigo-700 ml-1.5" id="annualEstNet_${yIdx}">$0</span>
+            </div>
+            <div>
+              <span class="text-slate-500">年度實際配息總額:</span>
+              <span class="text-base font-bold text-slate-800 ml-1.5" id="annualActualTotal_${yIdx}">$0</span>
+            </div>
+          </div>
+          <div>
+            <span class="text-slate-500">年度預估與實際總落差:</span>
+            <span class="text-base font-bold ml-1.5" id="payoutDiff_${yIdx}">$0</span>
+          </div>
+        </div>
+      `;
+      return card;
+    }
+
+    function calculateAll() {
+      const taxRate = (appState.healthTaxRate || 2.11) / 100;
+      const taxThreshold = appState.healthTaxThreshold || 20000;
+      const ratio = (appState.capGainRatio !== undefined ? appState.capGainRatio : 20) / 100;
+
+      const target = getCurrentTarget();
+      const numYears = target.years.length;
+
+      // 步驟 A: 計算各年份 8/31 淨值推估產生的每季預估金額
+      const yearEstimates = target.years.map(yData => {
+        const base = (yData.incomeSmoothing || 0) + ((yData.capitalGainSmoothing || 0) * ratio);
+        return base / 4;
+      });
+
+      // 步驟 B: 依據需求 2 的跨年對應邏輯填寫「季度配息預估(單位)」
+      // 邏輯說明：
+      // - 第 1 年 Q1 (y=0, q=0) & Q2 (y=0, q=1): 顯示 "--"
+      // - 第 1 年 8/31 淨值推估 (yearEstimates[0]) -> 填入 第 1 年 Q3, Q4 及 第 2 年 Q1, Q2
+      // - 第 K 年 8/31 淨值推估 (yearEstimates[k-1]) -> 填入 第 K 年 Q3, Q4 及 第 K+1 年 Q1, Q2
+      target.years.forEach((yData, yIdx) => {
+        yData.quarters.forEach((q, qIdx) => {
+          const qTd = document.getElementById(`qEstP_${yIdx}_${qIdx}`);
+          if (!qTd) return;
+
+          let valToShow = null;
+
+          if (qIdx === 0 || qIdx === 1) { // Q1 或 Q2
+            if (yIdx === 0) {
+              // 第一年 Q1/Q2 -> 固定顯示 "--"
+              valToShow = null;
+            } else {
+              // 次年起 Q1/Q2 -> 使用前一年的推估值 yearEstimates[yIdx - 1]
+              valToShow = yearEstimates[yIdx - 1];
+            }
+          } else { // Q3 或 Q4
+            // 當年度 Q3/Q4 -> 使用當年度的推估值 yearEstimates[yIdx]
+            valToShow = yearEstimates[yIdx];
+          }
+
+          if (valToShow !== null && valToShow > 0) {
+            qTd.innerText = valToShow.toFixed(3);
+          } else {
+            qTd.innerText = '--';
+          }
+        });
+      });
+
+      // 步驟 C: 計算扣費金額、實際金額與落差
+      target.years.forEach((yData, yIdx) => {
+        let annualEstNetSum = 0;
+        let annualActualSum = 0;
+
+        yData.quarters.forEach((q, qIdx) => {
+          const grossPayout = (q.shares || 0) * (q.estPayoutPerShare || 0);
+          let netPayout = grossPayout;
+          if (grossPayout >= taxThreshold) {
+            netPayout = grossPayout / (1 + taxRate);
+          }
+          netPayout = Math.round(netPayout);
+          annualEstNetSum += netPayout;
+
+          const netPayoutTd = document.getElementById(`netPayout_${yIdx}_${qIdx}`);
+          if (netPayoutTd) {
+            netPayoutTd.innerText = '$' + netPayout.toLocaleString();
+          }
+
+          const actualAmt = q.actualAmount || 0;
+          annualActualSum += actualAmt;
+
+          const qDiffTd = document.getElementById(`qDiff_${yIdx}_${qIdx}`);
+          if (qDiffTd) {
+            const diff = actualAmt - netPayout;
+            qDiffTd.innerText = (diff >= 0 ? '+' : '') + '$' + diff.toLocaleString();
+            qDiffTd.className = `py-2 px-1 text-right font-bold bg-slate-50/80 break-all ${
+              diff > 0 ? 'text-emerald-600' : diff < 0 ? 'text-rose-600' : 'text-slate-500'
+            }`;
+          }
+        });
+
+        const annualEstNetSpan = document.getElementById(`annualEstNet_${yIdx}`);
+        if (annualEstNetSpan) {
+          annualEstNetSpan.innerText = '$' + annualEstNetSum.toLocaleString();
+        }
+
+        const annualActualSpan = document.getElementById(`annualActualTotal_${yIdx}`);
+        if (annualActualSpan) {
+          annualActualSpan.innerText = '$' + annualActualSum.toLocaleString();
+        }
+
+        const payoutDiffSpan = document.getElementById(`payoutDiff_${yIdx}`);
+        if (payoutDiffSpan) {
+          const totalDiff = annualActualSum - annualEstNetSum;
+          payoutDiffSpan.innerText = (totalDiff >= 0 ? '+' : '') + '$' + totalDiff.toLocaleString();
+          payoutDiffSpan.className = `text-base font-bold ml-1.5 ${
+            totalDiff > 0 ? 'text-emerald-600' : totalDiff < 0 ? 'text-rose-600' : 'text-slate-600'
+          }`;
+        }
+      });
+    }
+
+    function updateYearField(yIdx, field, val) {
+      const numVal = parseFloat(val) || 0;
+      const target = getCurrentTarget();
+      target.years[yIdx][field] = numVal;
+
+      if (yIdx === 0) {
+        for (let i = 1; i < target.years.length; i++) {
+          target.years[i].year = target.years[0].year + i;
+          target.years[i].rocYear = target.years[0].rocYear + i;
+          target.years[i].age = target.years[0].age + i;
+        }
+      }
+
+      saveToLocalStorage();
+      renderAll();
+    }
+
+    function updateYearProperty(yIdx, prop, val) {
+      const target = getCurrentTarget();
+      target.years[yIdx][prop] = parseFloat(val) || 0;
+      saveToLocalStorage();
+      calculateAll();
+    }
+
+    function updateQuarterProperty(yIdx, qIdx, prop, val) {
+      const target = getCurrentTarget();
+      target.years[yIdx].quarters[qIdx][prop] = parseFloat(val) || 0;
+      saveToLocalStorage();
+      calculateAll();
+    }
+
+    function updateCapGainRatio(val) {
+      appState.capGainRatio = parseFloat(val) || 0;
+      saveToLocalStorage();
+      calculateAll();
+    }
+
+    function updateGlobalSettings() {
+      appState.healthTaxRate = parseFloat(document.getElementById('healthTaxRate').value) || 0;
+      appState.healthTaxThreshold = parseFloat(document.getElementById('healthTaxThreshold').value) || 0;
+      saveToLocalStorage();
+      calculateAll();
+    }
+
+    function updateCurrentTargetCode(code) {
+      const target = getCurrentTarget();
+      target.code = code.trim() || 'ETF';
+      saveToLocalStorage();
+      renderTargetTabs();
+    }
+
+    function updateExMonths() {
+      const target = getCurrentTarget();
+      target.exMonths = [
+        parseInt(document.getElementById('exMonth1').value) || 0,
+        parseInt(document.getElementById('exMonth2').value) || 0,
+        parseInt(document.getElementById('exMonth3').value) || 0,
+        parseInt(document.getElementById('exMonth4').value) || 0
+      ];
+      saveToLocalStorage();
+    }
+
+    function updatePayMonths() {
+      const target = getCurrentTarget();
+      target.payMonths = [
+        parseInt(document.getElementById('payMonth1').value) || 0,
+        parseInt(document.getElementById('payMonth2').value) || 0,
+        parseInt(document.getElementById('payMonth3').value) || 0,
+        parseInt(document.getElementById('payMonth4').value) || 0
+      ];
+      saveToLocalStorage();
+    }
+
+    function addYear() {
+      const target = getCurrentTarget();
+      const lastYear = target.years[target.years.length - 1];
+
+      const newYearNum = lastYear ? lastYear.year + 1 : 2026;
+      const newRocYear = lastYear ? lastYear.rocYear + 1 : 115;
+      const newAge = lastYear ? lastYear.age + 1 : 48;
+      const defaultShares = lastYear ? lastYear.quarters[3].shares : 0;
+
+      target.years.push({
+        year: newYearNum,
+        rocYear: newRocYear,
+        age: newAge,
+        actualPayout: 0,
+        incomeSmoothing: 0,
+        capitalGainSmoothing: 0,
+        quarters: [
+          { q: 'Q1', shares: defaultShares, price: 0, incomeBuf: 0, capBuf: 0, perSharePayout: 0, avgCostAfterEx: 0, estPayoutPerShare: 0, actualAmount: 0 },
+          { q: 'Q2', shares: defaultShares, price: 0, incomeBuf: 0, capBuf: 0, perSharePayout: 0, avgCostAfterEx: 0, estPayoutPerShare: 0, actualAmount: 0 },
+          { q: 'Q3', shares: defaultShares, price: 0, incomeBuf: 0, capBuf: 0, perSharePayout: 0, avgCostAfterEx: 0, estPayoutPerShare: 0, actualAmount: 0 },
+          { q: 'Q4', shares: defaultShares, price: 0, incomeBuf: 0, capBuf: 0, perSharePayout: 0, avgCostAfterEx: 0, estPayoutPerShare: 0, actualAmount: 0 }
+        ]
+      });
+
+      saveToLocalStorage();
+      renderAll();
+    }
+
+    function removeYear(yIdx) {
+      const target = getCurrentTarget();
+      if (confirm(`確定要刪除 ${target.years[yIdx].year} 年的資料嗎？`)) {
+        target.years.splice(yIdx, 1);
+        saveToLocalStorage();
+        renderAll();
+      }
+    }
+
+    function addNewTarget() {
+      const newCode = prompt("請輸入新 ETF 標的代號 (例如: 00878):", "00878");
+      if (!newCode) return;
+
+      appState.targets.push({
+        code: newCode.toUpperCase(),
+        exMonths: [0, 0, 0, 0],
+        payMonths: [0, 0, 0, 0],
+        years: [
+          {
+            year: 2026,
+            rocYear: 115,
+            age: 48,
+            actualPayout: 0,
+            incomeSmoothing: 0,
+            capitalGainSmoothing: 0,
+            quarters: [
+              { q: 'Q1', shares: 0, price: 0, incomeBuf: 0, capBuf: 0, perSharePayout: 0, avgCostAfterEx: 0, estPayoutPerShare: 0, actualAmount: 0 },
+              { q: 'Q2', shares: 0, price: 0, incomeBuf: 0, capBuf: 0, perSharePayout: 0, avgCostAfterEx: 0, estPayoutPerShare: 0, actualAmount: 0 },
+              { q: 'Q3', shares: 0, price: 0, incomeBuf: 0, capBuf: 0, perSharePayout: 0, avgCostAfterEx: 0, estPayoutPerShare: 0, actualAmount: 0 },
+              { q: 'Q4', shares: 0, price: 0, incomeBuf: 0, capBuf: 0, perSharePayout: 0, avgCostAfterEx: 0, estPayoutPerShare: 0, actualAmount: 0 }
+            ]
+          }
+        ]
+      });
+
+      appState.activeTargetIndex = appState.targets.length - 1;
+      appState.activeTab = appState.activeTargetIndex.toString();
+      saveToLocalStorage();
+      renderAll();
+    }
+
+    function removeCurrentTarget() {
+      if (appState.targets.length <= 1) {
+        alert("必須保留至少一個標的！");
+        return;
+      }
+      const target = getCurrentTarget();
+      if (confirm(`確定要刪除標的 [${target.code}] 嗎？`)) {
+        appState.targets.splice(appState.activeTargetIndex, 1);
+        appState.activeTargetIndex = 0;
+        appState.activeTab = '0';
+        saveToLocalStorage();
+        renderAll();
+      }
+    }
+
+    function exportJSON() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `ETF_Distribution_Estimate_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    function importJSON(event) {
+      const fileReader = new FileReader();
+      fileReader.onload = function (e) {
+        try {
+          const importedData = JSON.parse(e.target.result);
+          if (importedData && importedData.targets && Array.isArray(importedData.targets)) {
+            appState = importedData;
+            saveToLocalStorage();
+            renderAll();
+            alert("資料匯入成功！");
+          } else {
+            alert("格式不符，請選擇由本系統匯出的 JSON 檔案！");
+          }
+        } catch (err) {
+          alert("讀取檔案失敗：" + err.message);
+        }
+      };
+      if (event.target.files[0]) {
+        fileReader.readAsText(event.target.files[0]);
+      }
+    }
+
+    function resetData() {
+      if (confirm("確定要清空所有標的與試算資料，並重新開始嗎？")) {
+        localStorage.removeItem(STORAGE_KEY);
+        appState = {
+          activeTab: '0',
+          activeTargetIndex: 0,
+          capGainRatio: 20,
+          healthTaxRate: 2.11,
+          healthTaxThreshold: 20000,
+          targets: [
+            {
+              code: '00919',
+              exMonths: [3, 6, 9, 12],
+              payMonths: [4, 7, 10, 1],
+              years: [
+                {
+                  year: 2026,
+                  rocYear: 115,
+                  age: 48,
+                  actualPayout: 0,
+                  incomeSmoothing: 0,
+                  capitalGainSmoothing: 0,
+                  quarters: [
+                    { q: 'Q1', shares: 0, price: 0, incomeBuf: 0, capBuf: 0, perSharePayout: 0, avgCostAfterEx: 0, estPayoutPerShare: 0, actualAmount: 0 },
+                    { q: 'Q2', shares: 0, price: 0, incomeBuf: 0, capBuf: 0, perSharePayout: 0, avgCostAfterEx: 0, estPayoutPerShare: 0, actualAmount: 0 },
+                    { q: 'Q3', shares: 0, price: 0, incomeBuf: 0, capBuf: 0, perSharePayout: 0, avgCostAfterEx: 0, estPayoutPerShare: 0, actualAmount: 0 },
+                    { q: 'Q4', shares: 0, price: 0, incomeBuf: 0, capBuf: 0, perSharePayout: 0, avgCostAfterEx: 0, estPayoutPerShare: 0, actualAmount: 0 }
+                  ]
+                }
+              ]
+            }
+          ]
+        };
+        saveToLocalStorage();
+        renderAll();
+      }
+    }
+  </script>
+</body>
+</html>
