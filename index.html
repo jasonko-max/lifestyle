@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -16,6 +17,8 @@
     <meta property="og:url" content="https://jasonko-max.github.io/lifestyle/">
     <meta property="og:image" content="https://jasonko-max.github.io/lifestyle/favicon.png">
 
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google 字體：Inter、Noto Serif TC、Space Mono (強化建築座標感) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -73,7 +76,6 @@
             padding: 60px 24px 80px;
             box-sizing: border-box;
             background-color: var(--bg-blueprint);
-            /* 細緻建築方格底紋 (Grid Canvas) */
             background-image: 
                 linear-gradient(var(--grid-line) 1px, transparent 1px),
                 linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
@@ -81,7 +83,6 @@
             overflow: hidden;
         }
 
-        /* 畫布四周精緻工程標記 (十字標校對線) */
         .crosshair {
             position: absolute;
             color: var(--text-mono);
@@ -96,7 +97,6 @@
         .ch-bl { bottom: 24px; left: 28px; }
         .ch-br { bottom: 24px; right: 28px; }
 
-        /* 座標軸與貝茲軌跡 SVG (Blueprint Graphic) */
         .blueprint-graphic {
             position: absolute;
             top: 50%;
@@ -109,7 +109,6 @@
             z-index: 1;
         }
 
-        /* 文字內容區塊：精準留白，確保視覺分層 */
         .hero-content {
             position: relative;
             z-index: 2;
@@ -121,7 +120,6 @@
             padding: 20px;
         }
 
-        /* 技術規格膠囊標籤 */
         .sys-badge {
             display: inline-flex;
             align-items: center;
@@ -181,7 +179,6 @@
             letter-spacing: 0.5px;
         }
 
-        /* 建築結構風格按鈕：更通透、微透背景線條的輕晶體毛玻璃 (Ultra-Translucent Glassmorphism) */
         .btn-blueprint {
             display: inline-flex;
             align-items: center;
@@ -259,7 +256,7 @@
 
         .section-header {
             text-align: center;
-            margin-bottom: 48px;
+            margin-bottom: 28px;
         }
 
         .section-header .section-tag {
@@ -287,6 +284,109 @@
             line-height: 1.6;
         }
 
+        /* =========================================
+           ✨ 全域資料庫管理中樞面板 (Global Data Hub)
+           ========================================= */
+        .global-hub-card {
+            background: var(--card-surface);
+            border: 1px solid var(--border-soft);
+            border-radius: 8px;
+            padding: 16px 22px;
+            margin-bottom: 32px;
+            box-shadow: 0 3px 12px rgba(50, 40, 30, 0.04);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .hub-info {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .hub-icon-box {
+            width: 42px;
+            height: 42px;
+            border-radius: 6px;
+            background: #eef3ef;
+            border: 1px solid var(--border-soft);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--sage-dark);
+            font-size: 18px;
+        }
+
+        .hub-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-title);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hub-sub {
+            font-size: 12px;
+            color: var(--sage-muted);
+            margin-top: 2px;
+        }
+
+        .hub-status-badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 4px;
+            background: #deeee3;
+            color: #21613e;
+            border: 1px solid rgba(33, 97, 62, 0.25);
+        }
+
+        .hub-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-hub {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 12.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            border: 1px solid var(--border-soft);
+        }
+
+        .btn-hub-export {
+            background: var(--sage-dark);
+            color: #faf8f5;
+            border-color: var(--sage-dark);
+        }
+        .btn-hub-export:hover {
+            background: #27382f;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(45, 65, 55, 0.18);
+        }
+
+        .btn-hub-import {
+            background: #ede8df;
+            color: var(--text-title);
+        }
+        .btn-hub-import:hover {
+            background: #e0d8cc;
+            border-color: #baa896;
+            transform: translateY(-1px);
+        }
+
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -312,7 +412,6 @@
             border-color: #baa896;
         }
 
-        /* 卡片頂部序號與標籤列 */
         .card-meta {
             display: flex;
             align-items: center;
@@ -336,7 +435,6 @@
             width: fit-content;
         }
 
-        /* 建築感柔和低彩標籤 */
         .tag-navy   { background: #e2e8ee; color: #2c4456; }
         .tag-blue   { background: #dbe8f1; color: #1e527a; }
         .tag-amber  { background: #f7ebde; color: #8e4d1b; }
@@ -405,19 +503,10 @@
         <div class="crosshair ch-bl">SCALE: 1.0</div>
         <div class="crosshair ch-br">+ 121°30'E</div>
 
-        <!-- 
-            座標主軸線與突破框架 S 型實線軌跡 SVG 
-            線條特點：
-            1. 實線 (Solid Line) - 調整為黃金比例通透度 (rgba(135, 75, 35, 0.42))，既有實線力量又保證輕透空氣感
-            2. 流暢 S 型軌跡：左側平緩升起 ➔ 繞過文字下沿 ➔ 輕撫托住毛玻璃按鈕 ➔ 右側揚升突破天際
-            3. 所有英文標記配置於負空間，絕不遮擋任何標題文案
-        -->
         <svg class="blueprint-graphic" viewBox="0 0 1080 640" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- 座標底層刻度線 -->
             <line x1="60" y1="560" x2="1000" y2="560" stroke="rgba(70, 95, 80, 0.24)" stroke-width="1.2"/>
             <line x1="90" y1="60" x2="90" y2="580" stroke="rgba(70, 95, 80, 0.24)" stroke-width="1.2"/>
             
-            <!-- X 軸年代刻度 (20s ~ 90s) -->
             <line x1="280" y1="560" x2="280" y2="567" stroke="rgba(70, 95, 80, 0.35)" stroke-width="1"/>
             <line x1="540" y1="560" x2="540" y2="567" stroke="rgba(70, 95, 80, 0.35)" stroke-width="1"/>
             <line x1="800" y1="560" x2="800" y2="567" stroke="rgba(70, 95, 80, 0.35)" stroke-width="1"/>
@@ -427,45 +516,34 @@
             <text x="960" y="580" fill="#6b7f73" font-size="10" font-family="Space Mono" text-anchor="middle">90s FREEDOM</text>
             <text x="60" y="70" fill="#6b7f73" font-size="10" font-family="Space Mono">VALUE ↑</text>
 
-            <!-- 輔助水平工程基準線 -->
             <line x1="90" y1="410" x2="1000" y2="410" stroke="rgba(70, 95, 80, 0.12)" stroke-width="1" stroke-dasharray="3 3"/>
             <line x1="90" y1="180" x2="1000" y2="180" stroke="rgba(70, 95, 80, 0.12)" stroke-width="1" stroke-dasharray="3 3"/>
 
-            <!-- 
-                核心 S 型實線軌跡 (微調至半透明深焙咖啡色 rgba(135, 75, 35, 0.42))：
-                起點 (80, 470) ➔ (220, 390) ➔ 掠過按鈕底緣 (540, 502) ➔ 大弧度躍升 (800, 320) ➔ 突破邊界 (1010, 75)
-            -->
             <path d="M 80 470 C 180 470, 220 380, 330 380 C 420 380, 460 480, 540 502 C 630 525, 710 440, 800 320 C 890 200, 930 140, 1010 75" 
                   stroke="rgba(135, 75, 35, 0.42)" stroke-width="2.4" stroke-linecap="round"/>
 
-            <!-- 節點 1：啟程積累 [左側空白處] -->
             <circle cx="210" cy="405" r="4" fill="#3b5245" opacity="0.6"/>
             <circle cx="210" cy="405" r="8" stroke="#3b5245" stroke-width="1" opacity="0.25"/>
             <text x="140" y="375" fill="#3b5245" font-size="10" font-family="Space Mono" font-weight="700" opacity="0.75">P1 // ACCUMULATION</text>
             <line x1="210" y1="382" x2="210" y2="397" stroke="#3b5245" stroke-width="1" opacity="0.35"/>
 
-            <!-- 節點 2：輕撫按鈕樞紐點 [中央按鈕下方] -->
             <circle cx="540" cy="502" r="4.5" fill="rgba(135, 75, 35, 0.65)"/>
             <circle cx="540" cy="502" r="10" stroke="rgba(135, 75, 35, 0.28)" stroke-width="1"/>
             <text x="540" y="526" fill="rgba(135, 75, 35, 0.75)" font-size="10" font-family="Space Mono" font-weight="700" text-anchor="middle">P2 // PIVOT POINT</text>
 
-            <!-- 節點 3：複利揚升段 [右側開闊區] -->
             <circle cx="800" cy="320" r="4.5" fill="rgba(135, 75, 35, 0.65)"/>
             <circle cx="800" cy="320" r="9" stroke="rgba(135, 75, 35, 0.28)" stroke-width="1"/>
             <text x="820" y="324" fill="rgba(135, 75, 35, 0.75)" font-size="10.5" font-family="Space Mono" font-weight="700">P3 // COMPOUNDING FLOW</text>
 
-            <!-- 節點 4：終極自由突破口 [右上天際] -->
             <circle cx="1010" cy="75" r="5" fill="rgba(135, 75, 35, 0.7)"/>
             <circle cx="1010" cy="75" r="11" stroke="rgba(135, 75, 35, 0.35)" stroke-width="1.2"/>
-            <!-- 突破箭頭 -->
             <path d="M 1000 66 L 1014 74 L 1006 88" stroke="rgba(135, 75, 35, 0.65)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             <text x="840" y="70" fill="rgba(135, 75, 35, 0.8)" font-size="11" font-family="Space Mono" font-weight="700">BEYOND LIMITS ↗</text>
         </svg>
 
-        <!-- 封面主文案 (生活型態 × 財務邏輯) -->
         <div class="hero-content">
             <div class="sys-badge mono">
-                PERSONAL LIFESTYLE ARCHITECTURE // 01 - 09 SYSTEMS
+                LIFESTYLE ARCHITECTURE // 01 - 09 SYSTEMS
             </div>
 
             <h1 class="hero-title">生活型態<span class="accent">×</span>財務邏輯</h1>
@@ -477,7 +555,6 @@
                 從生命週期全盤推演金流軌跡與持續性、稅制、槓桿與退休規劃，繪製清晰的生命藍圖。
             </p>
 
-            <!-- 輕晶體高通透毛玻璃 EXPLORE SYSTEMS 按鈕 -->
             <a href="#systems-grid" class="btn-blueprint mono">
                 <span>EXPLORE SYSTEMS</span>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -506,6 +583,37 @@
                 <p>涵蓋全生命週期評估、退休給付、稅務推估、收支流水帳、ETF 組合分析與股票質押動態管理</p>
             </div>
 
+            <!-- =========================================
+                 ✨ 提案 B：全域資料庫管理中樞面板 (Global Data Hub)
+                 ========================================= -->
+            <section class="global-hub-card">
+                <div class="hub-info">
+                    <div class="hub-icon-box">
+                        <i class="fa-solid fa-database"></i>
+                    </div>
+                    <div>
+                        <div class="hub-title">
+                            <span>全域資料庫整合中樞</span>
+                            <span class="hub-status-badge mono" id="hubStatusBadge">已就緒 0 / 9 模組數據</span>
+                        </div>
+                        <div class="hub-sub">
+                            一鍵跨模組完整打包備份與同步還原（包含 01 ~ 09 全部系統紀錄）
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hub-actions">
+                    <button type="button" onclick="exportFullPortfolioBackup()" class="btn-hub btn-hub-export">
+                        <i class="fa-solid fa-file-export text-emerald-300"></i> 一鍵匯出全套備份
+                    </button>
+                    <label class="btn-hub btn-hub-import cursor-pointer">
+                        <i class="fa-solid fa-file-import text-amber-600"></i> 匯入全套備份檔
+                        <input type="file" id="fullImportInput" accept=".json,.lifestyle" class="hidden" onchange="importFullPortfolioBackup(event)">
+                    </label>
+                </div>
+            </section>
+
+            <!-- 9 大系統功能卡片網格 -->
             <div class="grid">
                 <!-- Card 1 -->
                 <div class="card">
@@ -658,5 +766,165 @@
         </div>
     </main>
 
+    <!-- =========================================
+         全域資料庫打包與同步邏輯 (Global Sync Script)
+         ========================================= -->
+    <script>
+        const MODULE_STORAGE_KEYS = {
+            sys01_data: 'lifestyle_v4_data',
+            sys01_meta: 'lifestyle_v4_meta',
+            sys02: 'labor_oldage_pension_calc_data_v2_0',
+            sys03: 'labor_pension_calc_data_v2_0',
+            sys04: 'cashflow_system_v3_6_planB',
+            sys05: 'TAX_ESTIMATE_SYSTEM_DATA_V2',
+            sys06: 'cashflow_calculator_data_v2',
+            sys07: 'ETF_PORTFOLIO_MULTI_ACCOUNT_DATA_V2',
+            sys08: 'ETF_DISTRIBUTION_CALCULATOR_DATA_V8',
+            sys09: 'pledge_calculator_state_v8'
+        };
+
+        function refreshHubStatus() {
+            let activeCount = 0;
+            const checkedModules = [
+                MODULE_STORAGE_KEYS.sys01_data,
+                MODULE_STORAGE_KEYS.sys02,
+                MODULE_STORAGE_KEYS.sys03,
+                MODULE_STORAGE_KEYS.sys04,
+                MODULE_STORAGE_KEYS.sys05,
+                MODULE_STORAGE_KEYS.sys06,
+                MODULE_STORAGE_KEYS.sys07,
+                MODULE_STORAGE_KEYS.sys08,
+                MODULE_STORAGE_KEYS.sys09
+            ];
+
+            checkedModules.forEach(key => {
+                const val = localStorage.getItem(key);
+                if (val && val !== '{}' && val !== '[]' && val !== 'null') {
+                    activeCount++;
+                }
+            });
+
+            const badge = document.getElementById('hubStatusBadge');
+            if (badge) {
+                badge.innerText = `已就緒 ${activeCount} / 9 模組數據`;
+                if (activeCount === 9) {
+                    badge.style.background = '#deeee3';
+                    badge.style.color = '#21613e';
+                } else if (activeCount > 0) {
+                    badge.style.background = '#faeedf';
+                    badge.style.color = '#9c5017';
+                } else {
+                    badge.style.background = '#e3e8ee';
+                    badge.style.color = '#5e7568';
+                }
+            }
+        }
+
+        // 匯出檔名格式化：Personal_LifeStyle_[姓名]_YYYYMMDD.json
+        function exportFullPortfolioBackup() {
+            let clientName = "";
+            try {
+                const metaRaw = localStorage.getItem(MODULE_STORAGE_KEYS.sys01_meta);
+                if (metaRaw) {
+                    const metaParsed = JSON.parse(metaRaw);
+                    if (metaParsed && metaParsed.clientName && metaParsed.clientName.trim()) {
+                        clientName = metaParsed.clientName.trim();
+                    }
+                }
+            } catch (e) {
+                console.warn("無法取得受評人姓名", e);
+            }
+
+            const fullPayload = {
+                brand: "Personal LifeStyle",
+                architectureVersion: "SYS_01-09_FullSuite",
+                exportDate: new Date().toISOString(),
+                clientName: clientName || "FullBackup",
+                modules: {}
+            };
+
+            for (const [key, storageKey] of Object.entries(MODULE_STORAGE_KEYS)) {
+                const rawVal = localStorage.getItem(storageKey);
+                if (rawVal) {
+                    try {
+                        fullPayload.modules[key] = JSON.parse(rawVal);
+                    } catch (err) {
+                        fullPayload.modules[key] = rawVal;
+                    }
+                } else {
+                    fullPayload.modules[key] = null;
+                }
+            }
+
+            const now = new Date();
+            const yearStr = now.getFullYear();
+            const monthStr = String(now.getMonth() + 1).padStart(2, '0');
+            const dayStr = String(now.getDate()).padStart(2, '0');
+            const dateStamp = `${yearStr}${monthStr}${dayStr}`;
+
+            const nameFragment = clientName ? `[${clientName}]` : `FullBackup`;
+            // 副檔名改為標準 .json
+            const filename = `Personal_LifeStyle_${nameFragment}_${dateStamp}.json`;
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(fullPayload, null, 2));
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", dataStr);
+            dlAnchor.setAttribute("download", filename);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+        }
+
+        function importFullPortfolioBackup(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+
+                    if (!parsed || !parsed.modules || typeof parsed.modules !== 'object') {
+                        alert("⚠️ 檔案格式不符合！請確認是否為由首頁匯出的「Personal LifeStyle 全套備份檔」！");
+                        event.target.value = '';
+                        return;
+                    }
+
+                    const targetName = parsed.clientName || "未命名";
+                    const exportTime = parsed.exportDate ? parsed.exportDate.slice(0, 10) : "未知日期";
+
+                    if (!confirm(`確認要匯入【${targetName}】（備份日期：${exportTime}）的全套資料嗎？\n\n⚠️ 此操作將同步覆蓋瀏覽器內現有 01 ~ 09 全部模組紀錄！`)) {
+                        event.target.value = '';
+                        return;
+                    }
+
+                    let restoredCount = 0;
+                    for (const [key, storageKey] of Object.entries(MODULE_STORAGE_KEYS)) {
+                        if (parsed.modules[key] !== undefined && parsed.modules[key] !== null) {
+                            const val = parsed.modules[key];
+                            if (typeof val === 'object') {
+                                localStorage.setItem(storageKey, JSON.stringify(val));
+                            } else {
+                                localStorage.setItem(storageKey, val);
+                            }
+                            restoredCount++;
+                        }
+                    }
+
+                    refreshHubStatus();
+                    alert(`🎉 成功復原 ${restoredCount} 個模組資料！\n所有子系統已全數同步更新。`);
+                    event.target.value = '';
+                } catch (err) {
+                    alert("❌ 檔案解析失敗，請確認檔案內容是否損毀。");
+                    event.target.value = '';
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            refreshHubStatus();
+        });
+    </script>
 </body>
 </html>
